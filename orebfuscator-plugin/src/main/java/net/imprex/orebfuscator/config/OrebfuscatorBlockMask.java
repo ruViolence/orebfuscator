@@ -15,9 +15,6 @@ public class OrebfuscatorBlockMask implements BlockMask {
 			for (Material material : worldConfig.getHiddenBlocks()) {
 				this.setBlockMask(material, BLOCK_MASK_OBFUSCATE);
 			}
-			for (Material material : worldConfig.getDarknessBlocks()) {
-				this.setBlockMask(material, BLOCK_MASK_DARKNESS);
-			}
 		}
 		if (proximityConfig != null && proximityConfig.enabled()) {
 			for (Map.Entry<Material, Short> entry : proximityConfig.getHiddenBlocks()) {

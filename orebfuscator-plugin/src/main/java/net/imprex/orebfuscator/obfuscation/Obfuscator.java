@@ -82,7 +82,6 @@ public class Obfuscator {
 					int z = baseZ + (index >> 4 & 15);
 
 					boolean obfuscateFlag = (obfuscateBits & BlockMask.BLOCK_MASK_OBFUSCATE) != 0;
-					boolean darknessFlag = (obfuscateBits & BlockMask.BLOCK_MASK_DARKNESS) != 0;
 					boolean tileEntityFlag = (obfuscateBits & BlockMask.BLOCK_MASK_TILEENTITY) != 0;
 					boolean proximityFlag = (obfuscateBits & BlockMask.BLOCK_MASK_PROXIMITY) != 0;
 
@@ -107,13 +106,6 @@ public class Obfuscator {
 							blockData = worldConfig.randomBlockId();
 						}
 						chunkSection.setBlock(index, blockData);
-					}
-
-					// Check if the block should be obfuscated because of the darkness
-					if (!obfuscate && darknessFlag && worldConfig.darknessBlocksEnabled()
-							&& !areAjacentBlocksBright(world, x, y, z, 1)) {
-						chunkSection.setBlock(index, NmsInstance.get().getCaveAirBlockId());
-						obfuscate = true;
 					}
 
 					// remove obfuscated tile entities
