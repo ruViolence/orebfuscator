@@ -31,7 +31,7 @@ public class OrebfuscatorWorldConfig implements WorldConfig {
 	protected void initialize() {
 		this.randomMaterials.clear();
 		for (Entry<Material, Integer> entry : this.randomBlocks.entrySet()) {
-			int blockId = NmsInstance.get().getMaterialIds(entry.getKey()).iterator().next();
+			int blockId = NmsInstance.getMaterialIds(entry.getKey()).iterator().next();
 			this.randomMaterials.add(entry.getValue(), blockId);
 			this.randomBlockIds.add(blockId);
 		}
@@ -70,7 +70,7 @@ public class OrebfuscatorWorldConfig implements WorldConfig {
 		}
 
 		for (String name : materialNames) {
-			Optional<Material> material = NmsInstance.get().getMaterialByName(name);
+			Optional<Material> material = NmsInstance.getMaterialByName(name);
 
 			if (!material.isPresent()) {
 				OFCLogger.warn(String.format("config section '%s.%s' contains unknown block '%s'",

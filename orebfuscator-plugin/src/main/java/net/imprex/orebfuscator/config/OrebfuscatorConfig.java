@@ -157,12 +157,6 @@ public class OrebfuscatorConfig implements Config {
 			}
 		}
 
-		for (World world : Bukkit.getWorlds()) {
-			if (!this.worldToWorldConfig.containsKey(world)) {
-				OFCLogger.warn("world " + world.getName() + " is missing a world config");
-			}
-		}
-
 		for (OrebfuscatorProximityConfig proximityConfig : this.proximityWorlds) {
 			proximityConfig.initialize();
 			for (World world : proximityConfig.worlds()) {
@@ -174,6 +168,7 @@ public class OrebfuscatorConfig implements Config {
 			}
 		}
 
+		// TODO handle dynamic world loading
 		for (World world : Bukkit.getWorlds()) {
 			if (!this.worldToWorldConfig.containsKey(world)) {
 				OFCLogger.warn("world " + world.getName() + " is missing a world config");

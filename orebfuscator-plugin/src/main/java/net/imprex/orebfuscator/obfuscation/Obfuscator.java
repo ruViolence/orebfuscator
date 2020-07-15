@@ -133,7 +133,7 @@ public class Obfuscator {
 		if (check) {
 			int blockId = chunk.getBlock(x, y, z);
 			if (blockId == -1) {
-				blockId = NmsInstance.get().loadChunkAndGetBlockId(world, x, y, z);
+				blockId = NmsInstance.loadChunkAndGetBlockId(world, x, y, z);
 			}
 			if (blockId >= 0 && MaterialUtil.isTransparent(blockId)) {
 				return true;
@@ -153,7 +153,7 @@ public class Obfuscator {
 	}
 
 	public static boolean areAjacentBlocksBright(World world, int x, int y, int z, int depth) {
-		if (NmsInstance.get().getBlockLightLevel(world, x, y, z) > 0) {
+		if (NmsInstance.getBlockLightLevel(world, x, y, z) > 0) {
 			return true;
 		}
 
