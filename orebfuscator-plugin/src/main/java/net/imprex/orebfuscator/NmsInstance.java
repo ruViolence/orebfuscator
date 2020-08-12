@@ -3,22 +3,19 @@ package net.imprex.orebfuscator;
 import java.util.Optional;
 import java.util.Set;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import net.imprex.orebfuscator.chunk.ChunkCapabilities;
 import net.imprex.orebfuscator.config.Config;
 import net.imprex.orebfuscator.nms.AbstractRegionFileCache;
 import net.imprex.orebfuscator.nms.BlockStateHolder;
 import net.imprex.orebfuscator.nms.NmsManager;
 import net.imprex.orebfuscator.util.BlockCoords;
+import net.imprex.orebfuscator.util.MinecraftVersion;
 import net.imprex.orebfuscator.util.OFCLogger;
 
 public class NmsInstance {
-
-	public static final String SERVER_VERSION = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
 
 	private static NmsManager instance;
 
@@ -27,75 +24,54 @@ public class NmsInstance {
 			throw new IllegalStateException("NMS protocol version was already initialized!");
 		}
 
-		OFCLogger.log("Searching NMS protocol for server version \"" + SERVER_VERSION + "\"!");
+		OFCLogger.log("Searching NMS protocol for server version \"" + MinecraftVersion.getNmsVersion() + "\"!");
 
-		// hasSimpleVarBitBuffer >= 1.16
-		// hasBlockCount >= 1.14
-		// hasLight < 1.14
-		// hasDirectPaletteZeroLength < 1.13
-
-		switch (SERVER_VERSION) {
+		switch (MinecraftVersion.getNmsVersion()) {
 		case "v1_16_R2":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_16_R2.NmsManager(config);
-			ChunkCapabilities.hasBlockCount();
-			ChunkCapabilities.hasSimpleVarBitBuffer();
 			break;
 
 		case "v1_16_R1":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_16_R1.NmsManager(config);
-			ChunkCapabilities.hasBlockCount();
-			ChunkCapabilities.hasSimpleVarBitBuffer();
 			break;
 
 		case "v1_15_R1":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_15_R1.NmsManager(config);
-			ChunkCapabilities.hasBlockCount();
 			break;
 
 		case "v1_14_R1":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_14_R1.NmsManager(config);
-			ChunkCapabilities.hasBlockCount();
 			break;
 
 		case "v1_13_R2":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_13_R2.NmsManager(config);
-			ChunkCapabilities.hasLightArray();
 			break;
 
 		case "v1_13_R1":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_13_R1.NmsManager(config);
-			ChunkCapabilities.hasLightArray();
 			break;
 
 		case "v1_12_R1":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_12_R1.NmsManager(config);
-			ChunkCapabilities.hasLightArray();
-			ChunkCapabilities.hasDirectPaletteZeroLength();
 			break;
 
 		case "v1_11_R1":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_11_R1.NmsManager(config);
-			ChunkCapabilities.hasLightArray();
-			ChunkCapabilities.hasDirectPaletteZeroLength();
 			break;
 
 		case "v1_10_R1":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_10_R1.NmsManager(config);
-			ChunkCapabilities.hasLightArray();
-			ChunkCapabilities.hasDirectPaletteZeroLength();
 			break;
 
 		case "v1_9_R2":
 			NmsInstance.instance = new net.imprex.orebfuscator.nms.v1_9_R2.NmsManager(config);
-			ChunkCapabilities.hasLightArray();
-			ChunkCapabilities.hasDirectPaletteZeroLength();
 			break;
 		}
 
 		if (NmsInstance.instance != null) {
-			OFCLogger.log("NMS protocol for server version \"" + SERVER_VERSION + "\" found!");
+			OFCLogger.log("NMS protocol for server version \"" + MinecraftVersion.getNmsVersion() + "\" found!");
 		} else {
-			throw new RuntimeException("Server version \"" + SERVER_VERSION + "\" is currently not supported!");
+			throw new RuntimeException("Server version \"" + MinecraftVersion.getNmsVersion() + "\" is currently not supported!");
 		}
 	}
 

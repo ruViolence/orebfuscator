@@ -105,6 +105,14 @@ public class NmsManager extends AbstractNmsManager {
 		return Optional.empty();
 	}
 
+	public Optional<String> getNameByMaterial(Material material) {
+		MinecraftKey key = IRegistry.BLOCK.getKey(CraftMagicNumbers.getBlock(material));
+		if (key != null) {
+			return Optional.of(key.toString());
+		}
+		return Optional.empty();
+	}
+
 	@Override
 	public int getCaveAirBlockId() {
 		return this.blockIdCaveAir;

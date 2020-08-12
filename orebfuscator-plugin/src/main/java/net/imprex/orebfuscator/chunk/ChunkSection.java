@@ -80,7 +80,7 @@ public class ChunkSection {
 	}
 
 	public void write(ByteBuf buffer) {
-		if (ChunkCapabilities.hasBlockCount) {
+		if (ChunkCapabilities.hasBlockCount()) {
 			buffer.writeShort(this.blockCount);
 		}
 
@@ -95,7 +95,7 @@ public class ChunkSection {
 	}
 
 	public int[] read(ByteBuf buffer) {
-		if (ChunkCapabilities.hasBlockCount) {
+		if (ChunkCapabilities.hasBlockCount()) {
 			this.blockCount = buffer.readShort();
 		}
 
