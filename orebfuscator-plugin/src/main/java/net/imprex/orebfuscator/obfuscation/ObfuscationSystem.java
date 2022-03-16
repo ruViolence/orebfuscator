@@ -1,7 +1,7 @@
 package net.imprex.orebfuscator.obfuscation;
 
 import java.util.Collection;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 
 import org.bukkit.block.Block;
 
@@ -16,7 +16,7 @@ public class ObfuscationSystem {
 	private final OrebfuscatorConfig config;
 	private final ObfuscationCache cache;
 
-	private final ObfuscationProcessor processor;
+	private final ObfuscationTaskProcessor processor;
 	private final ObfuscationTaskDispatcher dispatcher;
 	private ObfuscationListener listener;
 
@@ -27,7 +27,7 @@ public class ObfuscationSystem {
 		this.config = orebfuscator.getOrebfuscatorConfig();
 		this.cache = orebfuscator.getObfuscationCache();
 
-		this.processor = new ObfuscationProcessor(orebfuscator);
+		this.processor = new ObfuscationTaskProcessor(orebfuscator);
 		this.dispatcher = new ObfuscationTaskDispatcher(orebfuscator, this.processor);
 
 		this.deobfuscationWorker = new DeobfuscationWorker(orebfuscator);
@@ -42,13 +42,14 @@ public class ObfuscationSystem {
 		}
 	}
 
-	public CompletionStage<ObfuscationResult> obfuscate(ChunkStruct chunkStruct) {
+	public CompletableFuture<ObfuscationResult> obfuscate(ChunkStruct chunkStruct) {
 		ObfuscationRequest request = ObfuscationRequest.fromChunk(chunkStruct, this.config, this.dispatcher);
 		if (this.config.cache().enabled()) {
-			return this.cache.get(request);
+			this.cache.get(request);
 		} else {
-			return request.submitForObfuscation();
+			request.submitForObfuscation();
 		}
+		return request.getFuture();
 	}
 
 	public void deobfuscate(Collection<? extends Block> blocks) {

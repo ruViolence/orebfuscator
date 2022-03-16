@@ -1,8 +1,10 @@
 package net.imprex.orebfuscator.obfuscation;
 
+import java.lang.reflect.InvocationTargetException;
+
 import com.comphenix.protocol.AsynchronousManager;
-import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.async.AsyncListenerHandler;
+import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 
 import net.imprex.orebfuscator.Orebfuscator;
@@ -15,14 +17,9 @@ public class ObfuscationListenerAsync extends ObfuscationListener {
 	public ObfuscationListenerAsync(Orebfuscator orebfuscator) {
 		super(orebfuscator);
 
-		this.asynchronousManager = ProtocolLibrary.getProtocolManager().getAsynchronousManager();
+		this.asynchronousManager = this.protocolManager.getAsynchronousManager();
 		this.asyncListenerHandler = this.asynchronousManager.registerAsyncHandler(this);
 		this.asyncListenerHandler.start(orebfuscator.getOrebfuscatorConfig().advanced().protocolLibThreads());
-	}
-
-	@Override
-	protected void skipChunkForProcessing(PacketEvent event) {
-		this.asynchronousManager.signalPacketTransmission(event);
 	}
 
 	@Override
@@ -33,6 +30,31 @@ public class ObfuscationListenerAsync extends ObfuscationListener {
 	@Override
 	protected void postChunkProcessing(PacketEvent event) {
 		this.asynchronousManager.signalPacketTransmission(event);
+	}
+
+	@Override
+	protected void discardChunkPacket(PacketEvent event) {
+		event.setCancelled(true);
+		event.getAsyncMarker().setAsyncCancelled(true);
+
+		this.asynchronousManager.signalPacketTransmission(event);
+	}
+
+	@Override
+	protected Runnable deferUnloadPacket(PacketEvent event) {
+		PacketContainer unloadPacket = event.getPacket().deepClone();
+
+		event.setCancelled(true);
+		event.getAsyncMarker().setAsyncCancelled(true);
+		this.asynchronousManager.signalPacketTransmission(event);
+
+		return () -> {
+			try {
+				this.protocolManager.sendServerPacket(event.getPlayer(), unloadPacket, event.getNetworkMarker(), false);
+			} catch (InvocationTargetException e) {
+				e.printStackTrace();
+			}
+		};
 	}
 
 	@Override

@@ -16,7 +16,10 @@ import net.imprex.orebfuscator.NmsInstance;
 import net.imprex.orebfuscator.Orebfuscator;
 import net.imprex.orebfuscator.config.OrebfuscatorConfig;
 import net.imprex.orebfuscator.config.ProximityConfig;
+import net.imprex.orebfuscator.player.PlayerData;
+import net.imprex.orebfuscator.player.PlayerDataStorage;
 import net.imprex.orebfuscator.util.BlockPos;
+import net.imprex.orebfuscator.util.ChunkPosition;
 import net.imprex.orebfuscator.util.MathUtil;
 
 public class ProximityThread extends Thread {
@@ -27,13 +30,12 @@ public class ProximityThread extends Thread {
 	private final OrebfuscatorConfig config;
 
 	private final ProximityQueue proximityQueue;
-	private final ProximityPlayerManager dataManager;
-
+	private final PlayerDataStorage playerDataStorage;
 	private final AtomicBoolean running = new AtomicBoolean(true);
 
 	public ProximityThread(ProximityHider proximityHider, Orebfuscator orebfuscator) {
 		super(Orebfuscator.THREAD_GROUP, "ofc-proximity-hider-" + NEXT_ID.getAndIncrement());
-		this.dataManager = proximityHider.getPlayerManager();
+		this.playerDataStorage = orebfuscator.getPlayerDataStorage();
 		this.proximityQueue = proximityHider.getQueue();
 		this.orebfuscator = orebfuscator;
 		this.config = orebfuscator.getOrebfuscatorConfig();
@@ -53,8 +55,8 @@ public class ProximityThread extends Thread {
 					World world = location.getWorld();
 
 					ProximityConfig proximityConfig = this.config.proximity(world);
-					ProximityPlayer proximityPlayer = this.dataManager.get(player);
-					if (proximityPlayer == null || proximityConfig == null || !proximityConfig.isEnabled() || !proximityPlayer.getWorld().equals(world)) {
+					PlayerData playerData = this.playerDataStorage.get(player);
+					if (playerData == null || proximityConfig == null || !proximityConfig.isEnabled()) {
 						continue;
 					}
 
@@ -71,9 +73,8 @@ public class ProximityThread extends Thread {
 
 					for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
 						for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-							Set<BlockPos> blocks = proximityPlayer.getChunk(chunkX, chunkZ);
-
-							if (blocks == null) {
+							Set<BlockPos> blocks = playerData.getProximityBlocks(new ChunkPosition(world, chunkX, chunkZ));
+							if (blocks == null || blocks.isEmpty()) {
 								continue;
 							}
 
@@ -87,10 +88,6 @@ public class ProximityThread extends Thread {
 										updateBlocks.add(blockCoords);
 									}
 								}
-							}
-
-							if (blocks.isEmpty()) {
-								proximityPlayer.removeChunk(chunkX, chunkZ);
 							}
 						}
 					}

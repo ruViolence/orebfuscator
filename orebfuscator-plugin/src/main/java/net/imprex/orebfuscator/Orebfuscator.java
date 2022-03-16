@@ -15,9 +15,9 @@ import net.imprex.orebfuscator.api.OrebfuscatorService;
 import net.imprex.orebfuscator.cache.ObfuscationCache;
 import net.imprex.orebfuscator.config.OrebfuscatorConfig;
 import net.imprex.orebfuscator.obfuscation.ObfuscationSystem;
+import net.imprex.orebfuscator.player.PlayerDataStorage;
 import net.imprex.orebfuscator.proximityhider.ProximityHider;
 import net.imprex.orebfuscator.proximityhider.ProximityListener;
-import net.imprex.orebfuscator.proximityhider.ProximityPacketListener;
 import net.imprex.orebfuscator.util.HeightAccessor;
 import net.imprex.orebfuscator.util.OFCLogger;
 
@@ -29,10 +29,10 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 
 	private OrebfuscatorConfig config;
 	private UpdateSystem updateSystem;
+	private PlayerDataStorage playerDataStorage;
 	private ObfuscationCache obfuscationCache;
 	private ObfuscationSystem obfuscationSystem;
 	private ProximityHider proximityHider;
-	private ProximityPacketListener proximityPacketListener;
 
 	@Override
 	public void onEnable() {
@@ -63,10 +63,9 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 
 			// Load proximity hider
 			this.proximityHider = new ProximityHider(this);
+			this.playerDataStorage = new PlayerDataStorage(this);
 			if (this.config.proximityEnabled()) {
 				this.proximityHider.start();
-
-				this.proximityPacketListener = new ProximityPacketListener(this);
 
 				this.getServer().getPluginManager().registerEvents(new ProximityListener(this), this);
 			}
@@ -92,12 +91,15 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 
 	@Override
 	public void onDisable() {
-		this.obfuscationCache.close();
+		if (this.obfuscationCache != null) {
+			this.obfuscationCache.close();
+		}
 
-		this.obfuscationSystem.shutdown();
+		if (this.obfuscationSystem != null) {
+			this.obfuscationSystem.shutdown();
+		}
 
 		if (this.config.proximityEnabled()) {
-			this.proximityPacketListener.unregister();
 			this.proximityHider.close();
 		}
 
@@ -128,6 +130,10 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 		return updateSystem;
 	}
 
+	public PlayerDataStorage getPlayerDataStorage() {
+		return playerDataStorage;
+	}
+
 	public ObfuscationCache getObfuscationCache() {
 		return this.obfuscationCache;
 	}
@@ -138,9 +144,5 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 
 	public ProximityHider getProximityHider() {
 		return this.proximityHider;
-	}
-
-	public ProximityPacketListener getProximityPacketListener() {
-		return this.proximityPacketListener;
 	}
 }

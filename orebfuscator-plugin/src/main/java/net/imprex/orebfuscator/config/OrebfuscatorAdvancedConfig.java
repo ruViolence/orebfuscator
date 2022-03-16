@@ -44,6 +44,7 @@ public class OrebfuscatorAdvancedConfig implements AdvancedConfig {
 		this.proximityHiderThreads = (int) (proximityHiderThreadsSet ? proximityHiderThreads : Math.ceil(availableThreads / 2f));
 
 		OFCLogger.setVerboseLogging(this.verbose);
+		OFCLogger.debug("advanced.useAsyncPacketListener = " + this.useAsyncPacketListener);
 		OFCLogger.debug("advanced.maxMillisecondsPerTick = " + this.maxMillisecondsPerTick);
 		OFCLogger.debug("advanced.protocolLibThreads = " + this.protocolLibThreads);
 		OFCLogger.debug("advanced.obfuscationWorkerThreads = " + this.obfuscationWorkerThreads);

@@ -60,6 +60,10 @@ public class ObfuscationRequest {
 		return result != null && Arrays.equals(result.getHash(), this.chunkHash);
 	}
 
+	public boolean isCancelled() {
+		return this.future.isCancelled();
+	}
+
 	public CompletionStage<ObfuscationResult> submitForObfuscation() {
 		this.dispatcher.submitRequest(this);
 		return this.future;

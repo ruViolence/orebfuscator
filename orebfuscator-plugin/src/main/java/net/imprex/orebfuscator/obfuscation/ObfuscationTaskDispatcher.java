@@ -12,7 +12,7 @@ import net.imprex.orebfuscator.config.AdvancedConfig;
 
 class ObfuscationTaskDispatcher implements Runnable {
 
-	private final ObfuscationProcessor processor;
+	private final ObfuscationTaskProcessor processor;
 
 	private final Queue<ObfuscationRequest> requests = new ConcurrentLinkedQueue<>();
 	private final Queue<ObfuscationTask> tasks = new ConcurrentLinkedQueue<>();
@@ -20,7 +20,7 @@ class ObfuscationTaskDispatcher implements Runnable {
 	private final long availableNanosPerTick;
 	private final ObfuscationTaskWorker[] worker;
 
-	public ObfuscationTaskDispatcher(Orebfuscator orebfuscator, ObfuscationProcessor processor) {
+	public ObfuscationTaskDispatcher(Orebfuscator orebfuscator, ObfuscationTaskProcessor processor) {
 		this.processor = processor;
 
 		AdvancedConfig config = orebfuscator.getOrebfuscatorConfig().advanced();
@@ -54,17 +54,19 @@ class ObfuscationTaskDispatcher implements Runnable {
 	@Override
 	public void run() {
 		final long time = System.nanoTime();
-		int tasksProduced = 0;
+		int tasksRemaining = this.tasks.size();
 
 		ObfuscationRequest request = null;
 		while (System.nanoTime() - time < this.availableNanosPerTick && (request = this.requests.poll()) != null) {
-			this.tasks.offer(ObfuscationTask.fromRequest(request));
-			tasksProduced++;
+			if (!request.isCancelled()) {
+				this.tasks.offer(ObfuscationTask.fromRequest(request));
+				tasksRemaining++;
+			}
 		}
 
-		for (int i = 0; i < this.worker.length && tasksProduced > 0; i++) {
+		for (int i = 0; i < this.worker.length && tasksRemaining > 0; i++) {
 			if (this.worker[i].unpark()) {
-				tasksProduced--;
+				tasksRemaining--;
 			}
 		}
 	}

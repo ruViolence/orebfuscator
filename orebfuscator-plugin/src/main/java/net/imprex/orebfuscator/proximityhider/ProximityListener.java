@@ -1,5 +1,6 @@
 package net.imprex.orebfuscator.proximityhider;
 
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -12,6 +13,11 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import net.imprex.orebfuscator.Orebfuscator;
 
 public class ProximityListener implements Listener {
+
+	public static void createAndRegister(Orebfuscator orebfuscator) {
+		Listener listener = new ProximityListener(orebfuscator);
+		Bukkit.getPluginManager().registerEvents(listener, orebfuscator);
+	}
 
 	private ProximityHider proximityHider;
 
