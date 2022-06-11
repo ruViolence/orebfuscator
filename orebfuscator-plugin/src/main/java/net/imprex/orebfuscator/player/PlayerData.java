@@ -9,60 +9,43 @@ import net.imprex.orebfuscator.util.ChunkPosition;
 
 public class PlayerData {
 
-	private final Map<ChunkPosition, ChunkData> loadedChunks = new HashMap<>();
+	private final Map<ChunkPosition, Boolean> shouldUnloadChunk = new HashMap<>();
+	private final Map<ChunkPosition, Set<BlockPos>> proximityData = new HashMap<>();
 
 	/**
-	 * Should be called when a chunk is loaded
-	 * 
-	 * @param position the chunk's position
+	 * @return true if should be cancelled
 	 */
-	public void loadChunk(ChunkPosition position, long packetId, Runnable discard) {
-		this.loadedChunks.computeIfAbsent(position, ChunkData::new).loadChunk(packetId, discard);
-	}
-
-	/**
-	 * Should be called before a processed chunk is being sent
-	 * 
-	 * @param position the chunk's position
-	 * @return true if the chunk should be send
-	 */
-	public boolean preSendChunk(ChunkPosition position, long packetId) {
-		ChunkData chunk = this.loadedChunks.get(position);
-		return chunk != null ? chunk.preSendChunk(packetId) : false;
-	}
-
-	/**
-	 * Should be called after a processed chunk is sent
-	 * 
-	 * @param position        the chunk's position
-	 * @param proximityBlocks set of proximity hidden blocks in chunk
-	 */
-	public void postSendChunk(ChunkPosition position, long packetId, Set<BlockPos> proximityBlocks) {
-		ChunkData chunk = this.loadedChunks.get(position);
-		if (chunk != null) {
-			chunk.postSendChunk(packetId, proximityBlocks);
+	public boolean processChunk(ChunkPosition position) {
+		if (this.shouldUnloadChunk.containsKey(position)) {
+			return true;
+		} else {
+			this.shouldUnloadChunk.put(position, Boolean.FALSE);
+			return false;
 		}
 	}
 
 	/**
-	 * Should be called when a chunk is unloaded
-	 * 
-	 * @param position the chunk's position
-	 * @param unload   Runnable that should unload the chunk on call
-	 * @return true if the chunk should be unloaded
+	 * @return true if should be cancelled
 	 */
-	public void unloadChunk(ChunkPosition position, Runnable unload) {
-		ChunkData chunk = this.loadedChunks.get(position);
-		if (chunk != null) {
-			chunk.unloadChunk(() -> {
-				unload.run();
-				this.loadedChunks.remove(position);
-			});
+	public boolean preSendChunk(ChunkPosition position) {
+		if (this.shouldUnloadChunk.get(position) == Boolean.TRUE) {
+			this.shouldUnloadChunk.remove(position);
+			return true;
 		}
+		return false;
+	}
+
+	public void postSendChunk(ChunkPosition position, Set<BlockPos> proximityBlocks) {
+		this.shouldUnloadChunk.remove(position);
+		this.proximityData.put(position, proximityBlocks);
+	}
+
+	public void unloadChunk(ChunkPosition position) {
+		this.shouldUnloadChunk.computeIfPresent(position, (key, value) -> Boolean.TRUE);
+		this.proximityData.remove(position);
 	}
 
 	public Set<BlockPos> getProximityBlocks(ChunkPosition position) {
-		ChunkData chunk = this.loadedChunks.get(position);
-		return chunk != null ? chunk.getProximityBlocks() : null;
+		return this.proximityData.get(position);
 	}
 }

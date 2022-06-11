@@ -1,10 +1,7 @@
 package net.imprex.orebfuscator.obfuscation;
 
-import java.lang.reflect.InvocationTargetException;
-
 import com.comphenix.protocol.AsynchronousManager;
 import com.comphenix.protocol.async.AsyncListenerHandler;
-import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 
 import net.imprex.orebfuscator.Orebfuscator;
@@ -38,23 +35,6 @@ public class ObfuscationListenerAsync extends ObfuscationListener {
 		event.getAsyncMarker().setAsyncCancelled(true);
 
 		this.asynchronousManager.signalPacketTransmission(event);
-	}
-
-	@Override
-	protected Runnable deferUnloadPacket(PacketEvent event) {
-		PacketContainer unloadPacket = event.getPacket().deepClone();
-
-		event.setCancelled(true);
-		event.getAsyncMarker().setAsyncCancelled(true);
-		this.asynchronousManager.signalPacketTransmission(event);
-
-		return () -> {
-			try {
-				this.protocolManager.sendServerPacket(event.getPlayer(), unloadPacket, event.getNetworkMarker(), false);
-			} catch (InvocationTargetException e) {
-				e.printStackTrace();
-			}
-		};
 	}
 
 	@Override

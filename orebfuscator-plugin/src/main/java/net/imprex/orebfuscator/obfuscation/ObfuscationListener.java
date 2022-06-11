@@ -1,9 +1,5 @@
 package net.imprex.orebfuscator.obfuscation;
 
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.bukkit.entity.Player;
 
 import com.comphenix.protocol.PacketType;
@@ -24,8 +20,6 @@ import net.imprex.orebfuscator.util.OFCLogger;
 import net.imprex.orebfuscator.util.PermissionUtil;
 
 public abstract class ObfuscationListener extends PacketAdapter {
-
-	private final AtomicInteger chunkPacketId = new AtomicInteger();
 
 	private final OrebfuscatorConfig config;
 	private final PlayerDataStorage playerDataStorage;
@@ -51,8 +45,6 @@ public abstract class ObfuscationListener extends PacketAdapter {
 
 	protected abstract void discardChunkPacket(PacketEvent event);
 
-	protected abstract Runnable deferUnloadPacket(PacketEvent event);
-
 	public abstract void unregister();
 
 	@Override
@@ -75,9 +67,7 @@ public abstract class ObfuscationListener extends PacketAdapter {
 		int chunkZ = integers.read(1);
 
 		final ChunkPosition position = new ChunkPosition(player.getWorld(), chunkX, chunkZ);
-		final Runnable unload = this.deferUnloadPacket(event);
-
-		this.playerDataStorage.unloadChunk(player, position, unload);
+		this.playerDataStorage.unloadChunk(player, position);
 	}
 
 	private void onChunkLoad(Player player, PacketEvent event) {
@@ -86,26 +76,20 @@ public abstract class ObfuscationListener extends PacketAdapter {
 			return;
 		}
 
+		final ChunkPosition position = struct.getPosition();
+		if (this.playerDataStorage.processChunk(player, position)) {
+			this.discardChunkPacket(event);
+			return;
+		}
+
 		this.preChunkProcessing(event);
 
-
-		CompletableFuture<ObfuscationResult> completionStage = this.obfuscationSystem.obfuscate(struct);
-
-		final long packetId = chunkPacketId.getAndIncrement();
-		final ChunkPosition position = struct.getPosition();
-		this.playerDataStorage.loadChunk(player, position, packetId, () -> {
-			this.discardChunkPacket(event);
-			completionStage.cancel(true);
-		});
-
-		completionStage.whenComplete((chunk, throwable) -> {
-			if (throwable instanceof CancellationException) {
-				return;
-			} else if (throwable != null) {
+		this.obfuscationSystem.obfuscate(struct).whenComplete((chunk, throwable) -> {
+			if (throwable != null) {
 				OFCLogger.error(String.format("An error occurred while obfuscating chunk[world=%s, x=%d, z=%d]",
 						struct.world.getName(), struct.chunkX, struct.chunkZ), throwable);
 			} else if (chunk != null) {
-				if (!this.playerDataStorage.preSendChunk(player, position, packetId)) {
+				if (this.playerDataStorage.preSendChunk(player, position)) {
 					this.discardChunkPacket(event);
 					return;
 				}
@@ -113,7 +97,7 @@ public abstract class ObfuscationListener extends PacketAdapter {
 				struct.updateFromResult(chunk);
 
 				this.createPostListener(event, () -> {
-					playerDataStorage.postSendChunk(player, position, packetId, chunk.getProximityBlocks());
+					playerDataStorage.postSendChunk(player, position, chunk.getProximityBlocks());
 					this.proximityHider.queuePlayerUpdate(player);
 				});
 			} else {

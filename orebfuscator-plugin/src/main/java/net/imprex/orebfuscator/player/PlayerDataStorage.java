@@ -1,8 +1,8 @@
 package net.imprex.orebfuscator.player;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -22,7 +22,7 @@ import net.imprex.orebfuscator.util.ChunkPosition;
 
 public class PlayerDataStorage implements Listener {
 
-	private final Map<Player, PlayerData> playerData = new HashMap<>();
+	private final Map<Player, PlayerData> playerData = new WeakHashMap<>();
 	private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
 	private final ProximityHider proximityHider;
@@ -83,20 +83,26 @@ public class PlayerDataStorage implements Listener {
 		return defaultValue;
 	}
 
-	public void loadChunk(Player player, ChunkPosition position, long packetId, Runnable discard) {
-		this.getGuarded(player, data -> data.loadChunk(position, packetId, discard));
+	/**
+	 * @return true if should be cancelled
+	 */
+	public boolean processChunk(Player player, ChunkPosition position) {
+		return this.getGuarded(player, data -> data.processChunk(position), false);
 	}
 
-	public boolean preSendChunk(Player player, ChunkPosition position, long packetId) {
-		return this.getGuarded(player, data -> data.preSendChunk(position, packetId), false);
+	/**
+	 * @return true if should be cancelled
+	 */
+	public boolean preSendChunk(Player player, ChunkPosition position) {
+		return this.getGuarded(player, data -> data.preSendChunk(position), false);
 	}
 
-	public void postSendChunk(Player player, ChunkPosition position, long packetId, Set<BlockPos> proximityBlocks) {
-		this.getGuarded(player, data -> data.postSendChunk(position, packetId,
-				this.proximityHider.isInProximityWorld(player) ? proximityBlocks : null));
+	public void postSendChunk(Player player, ChunkPosition position, Set<BlockPos> proximityBlocks) {
+		this.getGuarded(player, data -> data.postSendChunk(position, 
+			this.proximityHider.isInProximityWorld(player) ? proximityBlocks : null));
 	}
 
-	public void unloadChunk(Player player, ChunkPosition position, Runnable unload) {
-		this.getGuarded(player, data -> data.unloadChunk(position, unload));
+	public void unloadChunk(Player player, ChunkPosition position) {
+		this.getGuarded(player, data -> data.unloadChunk(position));
 	}
 }
