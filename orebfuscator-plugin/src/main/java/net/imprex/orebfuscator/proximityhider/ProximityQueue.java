@@ -17,14 +17,14 @@ public class ProximityQueue {
 	private final Condition notEmpty = lock.newCondition();
 
 	private final Queue<Player> queue = new LinkedList<>();
-	private final Set<Player> lockedPlayer = new HashSet<>();
+	private final Set<Player> isQueued = new HashSet<>();
 
-	public void offerAndLock(Player player) {
+	public void offer(Player player) {
 		Objects.requireNonNull(player);
 
 		lock.lock();
 		try {
-			if (this.lockedPlayer.add(player)) {
+			if (this.isQueued.add(player)) {
 				boolean empty = this.queue.isEmpty();
 				this.queue.offer(player);
 				if (empty) {
@@ -36,7 +36,7 @@ public class ProximityQueue {
 		}
 	}
 
-	public Player poll() throws InterruptedException {
+	public Player startProcessing() throws InterruptedException {
 		lock.lock();
 		try {
 			if (this.queue.isEmpty()) {
@@ -48,10 +48,10 @@ public class ProximityQueue {
 		}
 	}
 
-	public void unlock(Player player) {
+	public void processingDone(Player player) {
 		lock.lock();
 		try {
-			this.lockedPlayer.remove(player);
+			this.isQueued.remove(player);
 		} finally {
 			lock.unlock();
 		}
@@ -60,7 +60,7 @@ public class ProximityQueue {
 	public void remove(Player player) {
 		lock.lock();
 		try {
-			if (this.lockedPlayer.remove(player)) {
+			if (this.isQueued.remove(player)) {
 				this.queue.remove(player);
 			}
 		} finally {
@@ -71,7 +71,7 @@ public class ProximityQueue {
 	public void clear() {
 		lock.lock();
 		try {
-			this.lockedPlayer.clear();
+			this.isQueued.clear();
 			this.queue.clear();
 		} finally {
 			lock.unlock();

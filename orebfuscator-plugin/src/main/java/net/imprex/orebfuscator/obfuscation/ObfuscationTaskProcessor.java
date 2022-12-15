@@ -18,11 +18,11 @@ import net.imprex.orebfuscator.config.WorldConfigBundle;
 import net.imprex.orebfuscator.util.BlockPos;
 import net.imprex.orebfuscator.util.HeightAccessor;
 
-public class ObfuscationProcessor {
+public class ObfuscationTaskProcessor {
 
 	private final OrebfuscatorConfig config;
 
-	public ObfuscationProcessor(Orebfuscator orebfuscator) {
+	public ObfuscationTaskProcessor(Orebfuscator orebfuscator) {
 		this.config = orebfuscator.getOrebfuscatorConfig();
 	}
 

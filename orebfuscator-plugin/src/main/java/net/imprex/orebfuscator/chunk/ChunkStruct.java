@@ -3,6 +3,7 @@ package net.imprex.orebfuscator.chunk;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.bukkit.World;
@@ -13,7 +14,9 @@ import com.comphenix.protocol.wrappers.nbt.NbtBase;
 import com.comphenix.protocol.wrappers.nbt.NbtCompound;
 
 import net.imprex.orebfuscator.nms.v1_18_R1.WrappedClientboundLevelChunkPacketData;
+import net.imprex.orebfuscator.obfuscation.ObfuscationResult;
 import net.imprex.orebfuscator.util.BlockPos;
+import net.imprex.orebfuscator.util.ChunkPosition;
 import net.imprex.orebfuscator.util.HeightAccessor;
 
 public class ChunkStruct {
@@ -60,7 +63,20 @@ public class ChunkStruct {
 		}
 	}
 
-	public void setDataBuffer(byte[] data) {
+	public ChunkPosition getPosition() {
+		return new ChunkPosition(this.world, this.chunkX, this.chunkZ);
+	}
+
+	public void updateFromResult(ObfuscationResult result) {
+		this.setDataBuffer(result.getData());
+
+		Set<BlockPos> blockEntities = result.getBlockEntities();
+		if (!blockEntities.isEmpty()) {
+			this.removeBlockEntityIf(blockEntities::contains);
+		}
+	}
+
+	private void setDataBuffer(byte[] data) {
 		if (this.packetData != null) {
 			this.packetData.setBuffer(data);
 		} else {
@@ -68,7 +84,7 @@ public class ChunkStruct {
 		}
 	}
 
-	public void removeBlockEntityIf(Predicate<BlockPos> predicate) {
+	private void removeBlockEntityIf(Predicate<BlockPos> predicate) {
 		if (this.packetData != null) {
 			this.packetData.removeBlockEntityIf(relativePostion -> 
 			predicate.test(relativePostion.add(chunkX << 4, 0, chunkZ << 4)));
@@ -76,6 +92,7 @@ public class ChunkStruct {
 			removeTileEntitiesFromPacket(this.packet, predicate);
 		}
 	}
+
 
 	private void removeTileEntitiesFromPacket(PacketContainer packet, Predicate<BlockPos> predicate) {
 		StructureModifier<List<NbtBase<?>>> packetNbtList = packet.getListNbtModifier();

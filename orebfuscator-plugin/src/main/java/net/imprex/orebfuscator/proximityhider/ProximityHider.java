@@ -14,7 +14,6 @@ public class ProximityHider {
 	private final Orebfuscator orebfuscator;
 	private final OrebfuscatorConfig config;
 
-	private final ProximityPlayerManager dataManager = new ProximityPlayerManager(this);
 	private final ProximityQueue queue = new ProximityQueue();
 
 	private final AtomicBoolean running = new AtomicBoolean();
@@ -25,10 +24,6 @@ public class ProximityHider {
 		this.config = this.orebfuscator.getOrebfuscatorConfig();
 
 		this.queueThreads = new ProximityThread[this.config.advanced().proximityHiderThreads()];
-	}
-
-	public ProximityPlayerManager getPlayerManager() {
-		return dataManager;
 	}
 
 	ProximityQueue getQueue() {
@@ -46,19 +41,20 @@ public class ProximityHider {
 
 	public void queuePlayerUpdate(Player player) {
 		if (this.isInProximityWorld(player) && !shouldIgnorePlayer(player)) {
-			this.queue.offerAndLock(player);
+			this.queue.offer(player);
 		}
 	}
 
 	public void removePlayer(Player player) {
 		this.queue.remove(player);
-		this.dataManager.remove(player);
 	}
 
 	public void start() {
 		if (!this.running.compareAndSet(false, true)) {
 			throw new IllegalStateException("proximity hider already running");
 		}
+
+		ProximityListener.createAndRegister(this.orebfuscator);
 
 		for (int i = 0; i < this.queueThreads.length; i++) {
 			ProximityThread thread = new ProximityThread(this, this.orebfuscator);
@@ -74,7 +70,6 @@ public class ProximityHider {
 		}
 
 		this.queue.clear();
-		this.dataManager.clear();
 
 		for (ProximityThread thread : this.queueThreads) {
 			if (thread != null) {

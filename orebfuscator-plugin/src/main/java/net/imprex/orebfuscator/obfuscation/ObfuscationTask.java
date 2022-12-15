@@ -32,8 +32,16 @@ public class ObfuscationTask {
 		this.request = request;
 	}
 
+	public ObfuscationRequest getRequest() {
+		return request;
+	}
+
 	public ChunkStruct getChunkStruct() {
 		return this.request.getChunkStruct();
+	}
+
+	public boolean isCancelled() {
+		return this.request.isCancelled();
 	}
 
 	public void complete(byte[] data, Set<BlockPos> blockEntities, Set<BlockPos> proximityBlocks) {
