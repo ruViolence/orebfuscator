@@ -4,18 +4,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import net.imprex.orebfuscator.Orebfuscator;
+import net.imprex.orebfuscator.obfuscation.task.ObfuscationTask;
 
 class ObfuscationTaskWorker implements Runnable {
 
 	private static final AtomicInteger WORKER_ID = new AtomicInteger();
 
+	private final Orebfuscator orebfuscator;
 	private final ObfuscationTaskDispatcher dispatcher;
 	private final ObfuscationProcessor processor;
 
 	private final Thread thread;
 	private volatile boolean running = true;
 
-	public ObfuscationTaskWorker(ObfuscationTaskDispatcher dispatcher, ObfuscationProcessor processor) {
+	public ObfuscationTaskWorker(Orebfuscator orebfuscator, ObfuscationTaskDispatcher dispatcher, ObfuscationProcessor processor) {
+		this.orebfuscator = orebfuscator;
 		this.dispatcher = dispatcher;
 		this.processor = processor;
 
@@ -25,7 +28,7 @@ class ObfuscationTaskWorker implements Runnable {
 	}
 
 	public boolean unpark() {
-		if (LockSupport.getBlocker(this.thread) != null) {
+		if (LockSupport.getBlocker(this.thread) == this.dispatcher) {
 			LockSupport.unpark(this.thread);
 			return true;
 		}
@@ -36,7 +39,15 @@ class ObfuscationTaskWorker implements Runnable {
 	public void run() {
 		while (this.running) {
 			try {
-				this.processor.process(this.dispatcher.retrieveTask());
+				ObfuscationTask task = this.dispatcher.retrieveTask();
+				try {
+					ObfuscationResult result = task.run(this.orebfuscator, this.processor);
+					if (result != null) {
+						task.complete(result);
+					}
+				} catch (Exception e) {
+					task.completeExceptionally(e);
+				}
 			} catch (InterruptedException e) {
 				break;
 			}

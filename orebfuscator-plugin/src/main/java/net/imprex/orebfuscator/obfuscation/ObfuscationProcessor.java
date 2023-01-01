@@ -15,6 +15,7 @@ import net.imprex.orebfuscator.config.ObfuscationConfig;
 import net.imprex.orebfuscator.config.OrebfuscatorConfig;
 import net.imprex.orebfuscator.config.ProximityConfig;
 import net.imprex.orebfuscator.config.WorldConfigBundle;
+import net.imprex.orebfuscator.obfuscation.task.ObfuscationTask;
 import net.imprex.orebfuscator.util.BlockPos;
 import net.imprex.orebfuscator.util.HeightAccessor;
 
@@ -26,15 +27,7 @@ public class ObfuscationProcessor {
 		this.config = orebfuscator.getOrebfuscatorConfig();
 	}
 
-	public void getOrProcess(ObfuscationTask task) {
-		if (config.cache().enabled()) {
-			task.computeHash(this.config);
-		}
-
-		this.process(task);
-	}
-
-	public void process(ObfuscationTask task) {
+	public ObfuscationResult process(ObfuscationTask task) throws Exception {
 		ChunkStruct chunkStruct = task.getChunkStruct();
 
 		World world = chunkStruct.world;
@@ -106,9 +99,7 @@ public class ObfuscationProcessor {
 				}
 			}
 
-			task.complete(chunk.finalizeOutput(), blockEntities, proximityBlocks);
-		} catch (Exception e) {
-			task.completeExceptionally(e);
+			return task.createResult(chunk.finalizeOutput(), blockEntities, proximityBlocks);
 		}
 	}
 

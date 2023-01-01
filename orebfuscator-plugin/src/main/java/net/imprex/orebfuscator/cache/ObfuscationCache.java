@@ -1,6 +1,5 @@
 package net.imprex.orebfuscator.cache;
 
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import org.bukkit.Bukkit;
@@ -11,8 +10,9 @@ import com.google.common.cache.RemovalNotification;
 
 import net.imprex.orebfuscator.Orebfuscator;
 import net.imprex.orebfuscator.config.CacheConfig;
-import net.imprex.orebfuscator.obfuscation.ObfuscationRequest;
 import net.imprex.orebfuscator.obfuscation.ObfuscationResult;
+import net.imprex.orebfuscator.obfuscation.task.ObfuscationTaskCacheRequest;
+import net.imprex.orebfuscator.obfuscation.task.ObfuscationTaskCacheResponse;
 import net.imprex.orebfuscator.util.ChunkPosition;
 
 public class ObfuscationCache {
@@ -51,41 +51,27 @@ public class ObfuscationCache {
 		}
 	}
 
-	public CompletionStage<ObfuscationResult> get(ObfuscationRequest request) {
-		ChunkPosition key = request.getPosition();
+	public ObfuscationResult get(ChunkPosition key) {
+		return this.cache.getIfPresent(key);
+	}
 
-		ObfuscationResult cacheChunk = this.cache.getIfPresent(key);
-		if (request.isValid(cacheChunk)) {
-			return request.complete(cacheChunk);
+	public void request(ObfuscationTaskCacheRequest request) {
+		if (!this.cacheConfig.enableDiskCache()) {
+			throw new IllegalStateException("disk cache is disabled but got request!");
 		}
 
-		if (this.cacheConfig.enableDiskCache()) {
+		this.serializer.read(request.getPosition()).whenComplete((result, exception) -> {
+			if (exception != null) {
+				request.completeExceptionally(exception);
+			} else {
+				this.orebfuscator.getObfuscationSystem()
+						.offerObfuscationTask(new ObfuscationTaskCacheResponse(request, result));
+			}
+		});
+	}
 
-			// compose async in order for the serializer to continue its work
-			this.serializer.read(key).thenComposeAsync(diskChunk -> {
-				if (request.isValid(diskChunk)) {
-					return request.complete(diskChunk);
-				} else {
-					// ignore exception and return null
-					return request.submitForObfuscation().exceptionally(throwable -> null);
-				}
-			}).thenAccept(chunk -> {
-				// if successful add chunk to in-memory cache
-				if (chunk != null) {
-					this.cache.put(key, chunk);
-				}
-			});
-		} else {
-
-			request.submitForObfuscation().thenAccept(chunk -> {
-				// if successful add chunk to in-memory cache
-				if (chunk != null) {
-					this.cache.put(key, chunk);
-				}
-			});
-		}
-
-		return request.getFuture();
+	public void put(ChunkPosition key, ObfuscationResult result) {
+		this.cache.put(key, result);
 	}
 
 	public void invalidate(ChunkPosition key) {

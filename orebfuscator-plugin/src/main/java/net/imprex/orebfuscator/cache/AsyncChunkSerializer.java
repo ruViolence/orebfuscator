@@ -132,6 +132,7 @@ public class AsyncChunkSerializer implements Runnable {
 	}
 
 	private class WriteTask implements Runnable {
+
 		private final ChunkPosition position;
 		private final ObfuscationResult chunk;
 
@@ -151,6 +152,7 @@ public class AsyncChunkSerializer implements Runnable {
 	}
 
 	private class ReadTask implements Runnable {
+
 		private final ChunkPosition position;
 		private final CompletableFuture<ObfuscationResult> future;
 
@@ -162,7 +164,9 @@ public class AsyncChunkSerializer implements Runnable {
 		@Override
 		public void run() {
 			try {
-				future.complete(ChunkSerializer.read(position));
+				if (!future.isDone()) {
+					future.complete(ChunkSerializer.read(position));
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
