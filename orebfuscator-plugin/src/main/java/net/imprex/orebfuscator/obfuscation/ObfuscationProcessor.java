@@ -26,6 +26,14 @@ public class ObfuscationProcessor {
 		this.config = orebfuscator.getOrebfuscatorConfig();
 	}
 
+	public void getOrProcess(ObfuscationTask task) {
+		if (config.cache().enabled()) {
+			task.computeHash(this.config);
+		}
+
+		this.process(task);
+	}
+
 	public void process(ObfuscationTask task) {
 		ChunkStruct chunkStruct = task.getChunkStruct();
 

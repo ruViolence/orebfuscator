@@ -67,10 +67,16 @@ public class HeightAccessor {
 		}
 	}
 
+	/**
+	 * Min world height (inclusive)
+	 */
 	public int getMinBuildHeight() {
 		return this.minHeight;
 	}
 
+	/**
+	 * Max world height (exclusive)
+	 */
 	public int getMaxBuildHeight() {
 		return this.maxHeight;
 	}
