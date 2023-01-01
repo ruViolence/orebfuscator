@@ -5,6 +5,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 public class ReadOnlyChunkWrapper implements ReadOnlyChunk {
 
@@ -24,6 +25,11 @@ public class ReadOnlyChunkWrapper implements ReadOnlyChunk {
 			}
 		}
 		return Blocks.AIR.defaultBlockState();
+	}
+
+	@Override
+	public int getHeight(int x, int z) {
+		return chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
 	}
 
 	@Override

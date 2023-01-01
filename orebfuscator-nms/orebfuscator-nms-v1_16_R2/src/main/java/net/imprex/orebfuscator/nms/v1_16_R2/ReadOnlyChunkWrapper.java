@@ -4,6 +4,7 @@ import net.imprex.orebfuscator.nms.ReadOnlyChunk;
 import net.minecraft.server.v1_16_R2.Blocks;
 import net.minecraft.server.v1_16_R2.Chunk;
 import net.minecraft.server.v1_16_R2.ChunkSection;
+import net.minecraft.server.v1_16_R2.HeightMap;
 import net.minecraft.server.v1_16_R2.IBlockData;
 
 public class ReadOnlyChunkWrapper implements ReadOnlyChunk {
@@ -23,6 +24,11 @@ public class ReadOnlyChunkWrapper implements ReadOnlyChunk {
 			}
 		}
 		return Blocks.AIR.getBlockData();
+	}
+
+	@Override
+	public int getHeight(int x, int z) {
+		return chunk.getHighestBlock(HeightMap.Type.WORLD_SURFACE, x, z);
 	}
 
 	@Override

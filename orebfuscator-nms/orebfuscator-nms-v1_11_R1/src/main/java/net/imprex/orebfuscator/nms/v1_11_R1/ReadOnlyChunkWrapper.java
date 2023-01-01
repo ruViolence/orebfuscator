@@ -12,6 +12,11 @@ public class ReadOnlyChunkWrapper implements ReadOnlyChunk {
 	}
 
 	@Override
+	public int getHeight(int x, int z) {
+		return chunk.b(x & 0xF, z & 0xF) - 1;
+	}
+
+	@Override
 	public int getBlockState(int x, int y, int z) {
 		return NmsManager.getBlockId(chunk.a(x, y, z));
 	}

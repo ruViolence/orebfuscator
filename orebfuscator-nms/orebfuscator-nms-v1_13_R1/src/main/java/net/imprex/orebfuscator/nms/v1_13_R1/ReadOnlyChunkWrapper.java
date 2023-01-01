@@ -2,6 +2,7 @@ package net.imprex.orebfuscator.nms.v1_13_R1;
 
 import net.imprex.orebfuscator.nms.ReadOnlyChunk;
 import net.minecraft.server.v1_13_R1.Chunk;
+import net.minecraft.server.v1_13_R1.HeightMap;
 
 public class ReadOnlyChunkWrapper implements ReadOnlyChunk {
 
@@ -9,6 +10,11 @@ public class ReadOnlyChunkWrapper implements ReadOnlyChunk {
 
 	ReadOnlyChunkWrapper(Chunk chunk) {
 		this.chunk = chunk;
+	}
+
+	@Override
+	public int getHeight(int x, int z) {
+		return chunk.a(HeightMap.Type.WORLD_SURFACE, x, z);
 	}
 
 	@Override
