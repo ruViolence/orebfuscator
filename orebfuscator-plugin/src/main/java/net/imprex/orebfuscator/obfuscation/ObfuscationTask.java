@@ -13,6 +13,10 @@ import net.imprex.orebfuscator.util.ChunkPosition;
 
 public class ObfuscationTask {
 
+	public static interface Processor {
+		void process(ObfuscationTask task);
+	}
+
 	public static ObfuscationTask fromRequest(ObfuscationRequest request) {
 		ObfuscationTask task = new ObfuscationTask(request);
 

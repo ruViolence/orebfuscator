@@ -12,7 +12,7 @@ import net.imprex.orebfuscator.config.AdvancedConfig;
 
 class ObfuscationTaskDispatcher implements Runnable {
 
-	private final ObfuscationProcessor processor;
+	private final ObfuscationTask.Processor processor;
 
 	private final Queue<ObfuscationRequest> requests = new ConcurrentLinkedQueue<>();
 	private final Queue<ObfuscationTask> tasks = new ConcurrentLinkedQueue<>();
@@ -20,7 +20,7 @@ class ObfuscationTaskDispatcher implements Runnable {
 	private final long availableNanosPerTick;
 	private final ObfuscationTaskWorker[] worker;
 
-	public ObfuscationTaskDispatcher(Orebfuscator orebfuscator, ObfuscationProcessor processor) {
+	public ObfuscationTaskDispatcher(Orebfuscator orebfuscator, ObfuscationTask.Processor processor) {
 		this.processor = processor;
 
 		AdvancedConfig config = orebfuscator.getOrebfuscatorConfig().advanced();

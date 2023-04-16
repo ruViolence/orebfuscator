@@ -2,7 +2,10 @@ package net.imprex.orebfuscator.obfuscation;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import net.imprex.orebfuscator.NmsInstance;
@@ -18,7 +21,10 @@ import net.imprex.orebfuscator.config.WorldConfigBundle;
 import net.imprex.orebfuscator.util.BlockPos;
 import net.imprex.orebfuscator.util.HeightAccessor;
 
-public class ObfuscationProcessor {
+public class ObfuscationProcessor implements ObfuscationTask.Processor {
+
+	private static final AtomicLong TIME = new AtomicLong();
+	private static final AtomicInteger COUNT = new AtomicInteger(-2500);
 
 	private final OrebfuscatorConfig config;
 
@@ -27,6 +33,8 @@ public class ObfuscationProcessor {
 	}
 
 	public void process(ObfuscationTask task) {
+		long time = System.currentTimeMillis();
+
 		ChunkStruct chunkStruct = task.getChunkStruct();
 
 		World world = chunkStruct.world;
@@ -46,6 +54,7 @@ public class ObfuscationProcessor {
 		try (Chunk chunk = Chunk.fromChunkStruct(chunkStruct)) {
 			for (int sectionIndex = Math.max(0, bundle.minSectionIndex()); sectionIndex <= Math
 					.min(chunk.getSectionCount() - 1, bundle.maxSectionIndex()); sectionIndex++) {
+
 				ChunkSection chunkSection = chunk.getSection(sectionIndex);
 				if (chunkSection == null || chunkSection.isEmpty()) {
 					continue;
@@ -71,7 +80,8 @@ public class ObfuscationProcessor {
 					boolean obfuscated = false;
 
 					// should current block be obfuscated
-					if (BlockFlags.isObfuscateBitSet(obfuscateBits) && shouldObfuscate(task, chunk, x, y, z)
+					if (BlockFlags.isObfuscateBitSet(obfuscateBits)
+							&& shouldObfuscate(task, chunk, x, y, z)
 							&& obfuscationConfig.shouldObfuscate(y)) {
 						blockState = bundle.nextRandomObfuscationBlock(y);
 						obfuscated = true;
@@ -95,6 +105,15 @@ public class ObfuscationProcessor {
 							blockEntities.add(new BlockPos(x, y, z));
 						}
 					}
+				}
+			}
+
+			long duration = System.currentTimeMillis() - time;
+			int count = COUNT.incrementAndGet();
+			if (count > 0) {
+				double totalTime = (double) TIME.addAndGet(duration);
+				if (count % 100 == 0) {
+					Bukkit.broadcastMessage("ms/chunk: " + (totalTime / count));
 				}
 			}
 

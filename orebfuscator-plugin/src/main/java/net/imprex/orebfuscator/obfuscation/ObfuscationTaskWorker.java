@@ -10,12 +10,12 @@ class ObfuscationTaskWorker implements Runnable {
 	private static final AtomicInteger WORKER_ID = new AtomicInteger();
 
 	private final ObfuscationTaskDispatcher dispatcher;
-	private final ObfuscationProcessor processor;
+	private final ObfuscationTask.Processor processor;
 
 	private final Thread thread;
 	private volatile boolean running = true;
 
-	public ObfuscationTaskWorker(ObfuscationTaskDispatcher dispatcher, ObfuscationProcessor processor) {
+	public ObfuscationTaskWorker(ObfuscationTaskDispatcher dispatcher, ObfuscationTask.Processor processor) {
 		this.dispatcher = dispatcher;
 		this.processor = processor;
 
