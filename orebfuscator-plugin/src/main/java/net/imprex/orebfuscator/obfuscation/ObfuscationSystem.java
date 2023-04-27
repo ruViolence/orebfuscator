@@ -9,6 +9,7 @@ import net.imprex.orebfuscator.Orebfuscator;
 import net.imprex.orebfuscator.cache.ObfuscationCache;
 import net.imprex.orebfuscator.chunk.ChunkStruct;
 import net.imprex.orebfuscator.config.OrebfuscatorConfig;
+import net.imprex.orebfuscator.obfuscation.seed.SeedObfuscationListener;
 
 public class ObfuscationSystem {
 
@@ -32,6 +33,8 @@ public class ObfuscationSystem {
 
 		this.deobfuscationWorker = new DeobfuscationWorker(orebfuscator);
 		DeobfuscationListener.createAndRegister(orebfuscator, this.deobfuscationWorker);
+		
+		new SeedObfuscationListener(orebfuscator);
 	}
 
 	public void registerChunkListener() {

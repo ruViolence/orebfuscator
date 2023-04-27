@@ -13,6 +13,7 @@ build () {
     curl -o BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
     "$JAVA_HOME/bin/java" -jar BuildTools.jar --rev $1 --remapped
 
+	rm -rf $1
     cd ..
 }
 
