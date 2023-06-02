@@ -12,11 +12,10 @@ import net.imprex.orebfuscator.Orebfuscator;
 
 public class SeedObfuscationListener extends PacketAdapter {
 
-	private final SeedObfuscationStrategy strategy = SeedObfuscationStrategy.createDynamically();
 	private final long hash;
 
 	public SeedObfuscationListener(Orebfuscator orebfuscator) {
-		super(orebfuscator, PacketType.Play.Server.LOGIN);
+		super(orebfuscator, PacketType.Play.Server.LOGIN, PacketType.Play.Server.RESPAWN);
 
 
 		ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
@@ -28,6 +27,10 @@ public class SeedObfuscationListener extends PacketAdapter {
 
 	@Override
 	public void onPacketSending(PacketEvent event) {
-		event.setPacket(strategy.process(event.getPacket(), this.hash));
+		if (event.getPacketType() == PacketType.Play.Server.LOGIN) {
+			event.setPacket(SeedObfuscationStrategy.DYNAMIC_LOGIN.process(event.getPacket(), this.hash));
+		} else if (event.getPacketType() == PacketType.Play.Server.RESPAWN) {
+			event.setPacket(SeedObfuscationStrategy.DYNAMIC_RESPAWN.process(event.getPacket(), this.hash));
+		}
 	}
 }

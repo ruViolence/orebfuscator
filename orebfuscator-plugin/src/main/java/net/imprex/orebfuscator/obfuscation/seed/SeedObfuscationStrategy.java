@@ -13,9 +13,14 @@ import com.comphenix.protocol.reflect.accessors.FieldAccessor;
 public interface SeedObfuscationStrategy {
 
 	static final SeedObfuscationStrategy NOOP = (packet, hash) -> packet;
+	static final SeedObfuscationStrategy DYNAMIC_LOGIN = createDynamicFor(PacketType.Play.Server.LOGIN);
+	static final SeedObfuscationStrategy DYNAMIC_RESPAWN = createDynamicFor(PacketType.Play.Server.RESPAWN);
 
-	static SeedObfuscationStrategy createDynamically() {
-		final PacketType packetType = PacketType.Play.Server.LOGIN;
+	static SeedObfuscationStrategy createDynamicFor(PacketType packetType) {
+		if (packetType != PacketType.Play.Server.LOGIN || packetType != PacketType.Play.Server.RESPAWN) {
+			throw new IllegalArgumentException("unsupported packet type: " + packetType);
+		}
+
 		final Class<?> packetClass = packetType.getPacketClass();
 
 		if (packetClass.isRecord()) {
