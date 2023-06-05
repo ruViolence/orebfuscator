@@ -4,7 +4,7 @@ import org.bukkit.permissions.Permissible;
 
 public class PermissionUtil {
 
-	public static boolean canDeobfuscate(Permissible permissible) {
+	public static boolean canBypassObfuscate(Permissible permissible) {
 		try {
 			return permissible.hasPermission("orebfuscator.bypass");
 		} catch (UnsupportedOperationException e) {

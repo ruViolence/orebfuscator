@@ -7,14 +7,14 @@ build () {
 	echo "Building v$1 with java-$2 ($JAVA_HOME)"
 
 	rm -rf $1
-    mkdir $1
-    cd $1
+	mkdir $1
+	cd $1
 
-    curl -o BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
-    "$JAVA_HOME/bin/java" -jar BuildTools.jar --rev $1 --remapped
+	curl -o BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
+	"$JAVA_HOME/bin/java" -jar BuildTools.jar --rev $1 --remapped
 
 	rm -rf $1
-    cd ..
+	cd ..
 }
 
 checkVersion () {

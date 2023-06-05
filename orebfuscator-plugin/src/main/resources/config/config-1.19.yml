@@ -21,6 +21,18 @@ cache:
   maximumSize: 16384
   expireAfterAccess: 60000
   maximumTaskQueueSize: 32768
+seed-obfuscation:
+  enabled: false
+  worlds:
+    world:
+      enabled: true
+      hash: -56238923789
+    world_nether:
+      enabled: true
+      hash: -56238923789
+    world_the_end:
+      enabled: true
+      hash: -56238923789
 obfuscation:
   obfuscation-overworld:
     enabled: true

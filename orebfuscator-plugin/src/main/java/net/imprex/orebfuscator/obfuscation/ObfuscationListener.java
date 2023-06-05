@@ -2,17 +2,17 @@ package net.imprex.orebfuscator.obfuscation;
 
 import java.util.Set;
 
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.events.PacketPostAdapter;
 
 import net.imprex.orebfuscator.Orebfuscator;
+import net.imprex.orebfuscator.OrebfuscatorPlayer;
 import net.imprex.orebfuscator.chunk.ChunkStruct;
 import net.imprex.orebfuscator.config.OrebfuscatorConfig;
-import net.imprex.orebfuscator.proximityhider.ProximityPlayerManager;
 import net.imprex.orebfuscator.util.BlockPos;
 import net.imprex.orebfuscator.util.OFCLogger;
 import net.imprex.orebfuscator.util.PermissionUtil;
@@ -20,14 +20,12 @@ import net.imprex.orebfuscator.util.PermissionUtil;
 public abstract class ObfuscationListener extends PacketAdapter {
 
 	private final OrebfuscatorConfig config;
-	private final ProximityPlayerManager proximityManager;
 	private final ObfuscationSystem obfuscationSystem;
 
 	public ObfuscationListener(Orebfuscator orebfuscator) {
 		super(orebfuscator, PacketType.Play.Server.MAP_CHUNK);
 
 		this.config = orebfuscator.getOrebfuscatorConfig();
-		this.proximityManager = orebfuscator.getProximityHider().getPlayerManager();
 		this.obfuscationSystem = orebfuscator.getObfuscationSystem();
 	}
 
@@ -55,6 +53,15 @@ public abstract class ObfuscationListener extends PacketAdapter {
 
 		this.preChunkProcessing(event);
 
+		event.getNetworkMarker().addPostListener(new PacketPostAdapter(this.plugin) {
+
+			@Override
+			public void onPostEvent(PacketEvent event) {
+				System.out.println("post-1: " + struct.chunkX + " " + struct.chunkZ);
+			}
+			
+		});
+
 		this.obfuscationSystem.obfuscate(struct).whenComplete((chunk, throwable) -> {
 			if (throwable != null) {
 				this.completeExceptionally(event, struct, throwable);
@@ -69,7 +76,7 @@ public abstract class ObfuscationListener extends PacketAdapter {
 	}
 
 	private boolean shouldNotObfuscate(Player player) {
-		return PermissionUtil.canDeobfuscate(player) || !config.world(player.getWorld()).needsObfuscation();
+		return PermissionUtil.canBypassObfuscate(player) || !config.world(player.getWorld()).needsObfuscation();
 	}
 
 	private void completeExceptionally(PacketEvent event, ChunkStruct struct, Throwable throwable) {
@@ -86,12 +93,19 @@ public abstract class ObfuscationListener extends PacketAdapter {
 			struct.removeBlockEntityIf(blockEntities::contains);
 		}
 
-		Player player = event.getPlayer();
-		this.proximityManager.addAndLockChunk(player, struct.chunkX, struct.chunkZ, chunk.getProximityBlocks());
+		final OrebfuscatorPlayer player = OrebfuscatorPlayer.get(event.getPlayer());
 
-		Bukkit.getScheduler().runTask(this.plugin, () -> {
-			this.postChunkProcessing(event);
-			this.proximityManager.unlockChunk(player, struct.chunkX, struct.chunkZ);
+		event.getNetworkMarker().addPostListener(new PacketPostAdapter(this.plugin) {
+
+			@Override
+			public void onPostEvent(PacketEvent event) {
+				System.out.println("post-2: " + struct.chunkX + " " + struct.chunkZ);
+				player.addChunk(struct.chunkX, struct.chunkZ, chunk.getProximityBlocks());
+			}
+			
 		});
+//		player.addChunk(struct.chunkX, struct.chunkZ, chunk.getProximityBlocks());
+
+		this.postChunkProcessing(event);
 	}
 }
