@@ -10,10 +10,12 @@ import java.util.Queue;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.IntUnaryOperator;
 import java.util.stream.IntStream;
 
 import org.bukkit.Bukkit;
@@ -41,6 +43,8 @@ public class ProximityDirectorThread extends Thread {
 
 		this.workerCount = 1;// orebfuscator.getOrebfuscatorConfig().advanced().proximityHiderThreads();
 		this.cyclicBarrier = new CyclicBarrier(this.workerCount);
+
+		Executors.newFixedThreadPool(1).execute(null);
 
 		this.worker = new ProximityWorker(orebfuscator);
 		this.workerThreads = new ProximityWorkerThread[workerCount - 1];
@@ -81,11 +85,25 @@ public class ProximityDirectorThread extends Thread {
 			}
 		};
 
-		final Lock bucketLock = new ReentrantLock();
+		final Lock bucketLock = new ReentrantLock(true);
 		final Condition nextBucket = bucketLock.newCondition();
 
 		final Queue<String> queue = new ConcurrentLinkedQueue<>();
 		final int workerCount = Runtime.getRuntime().availableProcessors();
+
+		final int fibonacciCount = 36;
+		IntUnaryOperator fibonacci = new IntUnaryOperator() {
+			
+			@Override
+			public int applyAsInt(int operand) {
+			    if(operand == 0)
+			        return 0;
+			    else if(operand == 1)
+			      return 1;
+			   else
+			      return applyAsInt(operand - 1) + applyAsInt(operand - 2);
+			}
+		};
 
 		IntStream.range(0, workerCount).forEach(index -> {
 			new Thread(() -> {
@@ -95,12 +113,14 @@ public class ProximityDirectorThread extends Thread {
 
 						bucketLock.lock();
 						try {
-							nextBucket.await();
-							element = queue.poll();
+							while ((element = queue.poll()) == null) {
+								nextBucket.await();
+							}
 						} finally {
 							bucketLock.unlock();
 						}
 
+						fibonacci.applyAsInt(fibonacciCount);
 						System.out.println(Thread.currentThread().getName() + ": " + element);
 
 						phaser.arriveAndDeregister();
@@ -113,7 +133,7 @@ public class ProximityDirectorThread extends Thread {
 
 		while (!phaser.isTerminated()) {
 			try {
-				int bucketCount = (int) Math.round(Math.random() * workerCount);
+				int bucketCount = (int) Math.round(Math.random() * workerCount * 4);
 				if (bucketCount == 0) {
 					continue;
 				}
@@ -129,10 +149,6 @@ public class ProximityDirectorThread extends Thread {
 					bucketLock.unlock();
 				}
 
-				phaser.arriveAndAwaitAdvance();
-
-				Thread.sleep(1L);
-
 				if (bucketCount > 1) {
 					phaser.bulkRegister(bucketCount - 1);
 				}
@@ -142,14 +158,20 @@ public class ProximityDirectorThread extends Thread {
 				bucketLock.lock();
 				try {
 					element = queue.poll();
-					for (int i = 0; i < bucketCount - 1; i++) {
+					int currentWorkerCount = Math.min(workerCount, bucketCount);
+					for (int i = 0; i < currentWorkerCount - 1; i++) {
 						nextBucket.signal();
 					}
 				} finally {
 					bucketLock.unlock();
 				}
 
+				fibonacci.applyAsInt(fibonacciCount);
 				System.out.println(Thread.currentThread().getName() + ": " + element);
+
+				phaser.arriveAndAwaitAdvance();
+
+				Thread.sleep(50L);
 			} catch (Exception e) {
 				break;
 			}
