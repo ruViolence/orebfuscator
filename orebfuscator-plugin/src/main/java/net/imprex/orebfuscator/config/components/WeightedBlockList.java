@@ -1,9 +1,11 @@
 package net.imprex.orebfuscator.config.components;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -44,7 +46,7 @@ public class WeightedBlockList {
 					for (Map.Entry<BlockProperties, Integer> entry : list.blocks.entrySet()) {
 						if (!builder.add(entry.getKey().getDefaultBlockState().getId(), entry.getValue())) {
 							OFCLogger.warn(String.format("duplicate randomBlock entry for %s in %s",
-									entry.getKey().getName(), list.name));
+									entry.getKey().getKey(), list.name));
 						}
 					}
 				}
@@ -110,7 +112,11 @@ public class WeightedBlockList {
 
         section = section.createSection("blocks");
         for (Map.Entry<BlockProperties, Integer> entry : this.blocks.entrySet()) {
-            section.set(entry.getKey().getName(), entry.getValue());
+            section.set(entry.getKey().getKey().toString(), entry.getValue());
         }
+    }
+   
+    public Set<BlockProperties> getBlocks() {
+    	return Collections.unmodifiableSet(this.blocks.keySet());
     }
 }

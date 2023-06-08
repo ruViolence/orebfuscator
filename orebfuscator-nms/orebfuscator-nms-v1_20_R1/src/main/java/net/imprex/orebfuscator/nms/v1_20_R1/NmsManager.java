@@ -1,4 +1,4 @@
-package net.imprex.orebfuscator.nms.v1_18_R1;
+package net.imprex.orebfuscator.nms.v1_20_R1;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,9 +6,9 @@ import java.util.Map;
 
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_18_R1.block.data.CraftBlockData;
-import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_20_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_20_R1.block.data.CraftBlockData;
+import org.bukkit.craftbukkit.v1_20_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import com.google.common.collect.ImmutableList;
@@ -23,7 +23,7 @@ import net.imprex.orebfuscator.util.BlockProperties;
 import net.imprex.orebfuscator.util.BlockStateProperties;
 import net.imprex.orebfuscator.util.NamespacedKey;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerChunkCache;
@@ -49,7 +49,7 @@ public class NmsManager extends AbstractNmsManager {
 		return level.getChunkSource().isChunkLoaded(chunkX, chunkZ);
 	}
 
-	private static BlockState getBlockData(World world, int x, int y, int z, boolean loadChunk) {
+	private static BlockState getBlockState(World world, int x, int y, int z, boolean loadChunk) {
 		ServerLevel level = level(world);
 		ServerChunkCache serverChunkCache = level.getChunkSource();
 
@@ -64,8 +64,7 @@ public class NmsManager extends AbstractNmsManager {
 	public NmsManager(Config config) {
 		super(config);
 
-
-		for (Map.Entry<ResourceKey<Block>, Block> entry : Registry.BLOCK.entrySet()) {
+		for (Map.Entry<ResourceKey<Block>, Block> entry : BuiltInRegistries.BLOCK.entrySet()) {
 			NamespacedKey namespacedKey = NamespacedKey.fromString(entry.getKey().location().toString());
 			Block block = entry.getValue();
 
@@ -122,14 +121,14 @@ public class NmsManager extends AbstractNmsManager {
 
 	@Override
 	public AbstractBlockState<?> getBlockState(World world, int x, int y, int z) {
-		BlockState blockData = getBlockData(world, x, y, z, false);
+		BlockState blockData = getBlockState(world, x, y, z, false);
 		return blockData != null ? new BlockStateWrapper(x, y, z, world, blockData) : null;
 	}
 
 	@Override
 	public boolean sendBlockChange(Player player, int x, int y, int z) {
 		ServerPlayer serverPlayer = player(player);
-		ServerLevel level = serverPlayer.getLevel();
+		ServerLevel level = serverPlayer.serverLevel();
 		if (!isChunkLoaded(level, x >> 4, z >> 4)) {
 			return false;
 		}
@@ -144,7 +143,7 @@ public class NmsManager extends AbstractNmsManager {
 
 	private void updateBlockEntity(ServerPlayer player, BlockPos position, BlockState blockData) {
 		if (blockData.hasBlockEntity()) {
-			ServerLevel serverLevel = player.getLevel();
+			ServerLevel serverLevel = player.serverLevel();
 			BlockEntity blockEntity = serverLevel.getBlockEntity(position);
 			if (blockEntity != null) {
 				player.connection.send(blockEntity.getUpdatePacket());

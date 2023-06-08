@@ -32,6 +32,10 @@ public interface BlockFlags {
 		return isBitSet(mask, FLAG_USE_BLOCK_BELOW);
 	}
 
+	public static boolean isAllowForUseBlockBelowBitSet(int mask) {
+		return isBitSet(mask, FLAG_ALLOW_FOR_USE_BLOCK_BELOW);
+	}
+
 	int flags(int blockState);
 
 	int flags(int blockState, int y);
