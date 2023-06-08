@@ -1,53 +1,52 @@
 package net.imprex.orebfuscator.proximityhider;
 
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Executors;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Phaser;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.IntUnaryOperator;
-import java.util.stream.IntStream;
+import java.util.concurrent.locks.LockSupport;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 
 import net.imprex.orebfuscator.Orebfuscator;
+import net.imprex.orebfuscator.util.OFCLogger;
 
-public class ProximityDirectorThread extends Thread {
+public class ProximityDirectorThread extends Thread implements Listener {
+
+	private static final int DEFAULT_BUCKET_SIZE = 50;
 
 	private final Phaser phaser = new Phaser(1);
-	private final CyclicBarrier cyclicBarrier;
 	private volatile boolean running = true;
 
 	private final int workerCount;
-	private final Queue<List<Player>> bucketQueue = new LinkedList<>();
-
-	private final Lock bucketLock = new ReentrantLock();
-	private final Condition nextBucket = bucketLock.newCondition();
+	private final BlockingQueue<List<Player>> bucketQueue = new LinkedBlockingQueue<>();
 
 	private final ProximityWorker worker;
 	private final ProximityWorkerThread[] workerThreads;
 
 	public ProximityDirectorThread(Orebfuscator orebfuscator) {
 		super(Orebfuscator.THREAD_GROUP, "ofc-proximity-director");
+		this.setDaemon(true);
 
-		this.workerCount = 1;// orebfuscator.getOrebfuscatorConfig().advanced().proximityHiderThreads();
-		this.cyclicBarrier = new CyclicBarrier(this.workerCount);
-
-		Executors.newFixedThreadPool(1).execute(null);
+		this.workerCount = orebfuscator.getOrebfuscatorConfig().advanced().proximityHiderThreads();
+		Bukkit.getPluginManager().registerEvents(this, orebfuscator);
 
 		this.worker = new ProximityWorker(orebfuscator);
 		this.workerThreads = new ProximityWorkerThread[workerCount - 1];
+	}
+
+	@EventHandler
+	public void onJoin(PlayerJoinEvent event) {
+		if (LockSupport.getBlocker(this) == this) {
+			LockSupport.unpark(this);
+		}
 	}
 
 	@Override
@@ -64,132 +63,24 @@ public class ProximityDirectorThread extends Thread {
 		this.running = false;
 
 		this.interrupt();
+
 		for (int i = 0; i < workerCount - 1; i++) {
 			this.workerThreads[i].interrupt();
 		}
+
+		this.phaser.forceTermination();
 	}
 
 	boolean isRunning() {
-		return this.running;
+		return this.running && !this.phaser.isTerminated();
 	}
 
-	public static void main(String[] args) {
-		final Phaser phaser = new Phaser(1) {
-			@Override
-			protected boolean onAdvance(int phase, int registeredParties) {
-				System.out.println("onAdvance: " + phase + " " + registeredParties + " " + Thread.currentThread().getName());
-				if (registeredParties == 0) {
-					new Exception().printStackTrace();
-				}
-				return registeredParties == 0;
-			}
-		};
-
-		final Lock bucketLock = new ReentrantLock(true);
-		final Condition nextBucket = bucketLock.newCondition();
-
-		final Queue<String> queue = new ConcurrentLinkedQueue<>();
-		final int workerCount = Runtime.getRuntime().availableProcessors();
-
-		final int fibonacciCount = 36;
-		IntUnaryOperator fibonacci = new IntUnaryOperator() {
-			
-			@Override
-			public int applyAsInt(int operand) {
-			    if(operand == 0)
-			        return 0;
-			    else if(operand == 1)
-			      return 1;
-			   else
-			      return applyAsInt(operand - 1) + applyAsInt(operand - 2);
-			}
-		};
-
-		IntStream.range(0, workerCount).forEach(index -> {
-			new Thread(() -> {
-				while (!phaser.isTerminated()) {
-					try {
-						String element;
-
-						bucketLock.lock();
-						try {
-							while ((element = queue.poll()) == null) {
-								nextBucket.await();
-							}
-						} finally {
-							bucketLock.unlock();
-						}
-
-						fibonacci.applyAsInt(fibonacciCount);
-						System.out.println(Thread.currentThread().getName() + ": " + element);
-
-						phaser.arriveAndDeregister();
-					} catch (InterruptedException e) {
-						break;
-					}
-				}
-			}, "wroker-" + index).start();
-		});
-
-		while (!phaser.isTerminated()) {
-			try {
-				int bucketCount = (int) Math.round(Math.random() * workerCount * 4);
-				if (bucketCount == 0) {
-					continue;
-				}
-
-				String element;
-
-				bucketLock.lock();
-				try {
-					for (int i = 0; i < bucketCount; i++) {
-						queue.offer("element " + i + " in phase " + (phaser.getPhase() + 1));
-					}
-				} finally {
-					bucketLock.unlock();
-				}
-
-				if (bucketCount > 1) {
-					phaser.bulkRegister(bucketCount - 1);
-				}
-				System.out.println(String.format("bucketCount: %s, phase: %s, registed: %s, arrived: %s, queue: %s, time: %s", bucketCount,
-							phaser.getPhase(), phaser.getRegisteredParties(), phaser.getArrivedParties(), queue.size(), LocalTime.now().toString()));
-
-				bucketLock.lock();
-				try {
-					element = queue.poll();
-					int currentWorkerCount = Math.min(workerCount, bucketCount);
-					for (int i = 0; i < currentWorkerCount - 1; i++) {
-						nextBucket.signal();
-					}
-				} finally {
-					bucketLock.unlock();
-				}
-
-				fibonacci.applyAsInt(fibonacciCount);
-				System.out.println(Thread.currentThread().getName() + ": " + element);
-
-				phaser.arriveAndAwaitAdvance();
-
-				Thread.sleep(50L);
-			} catch (Exception e) {
-				break;
-			}
-		}
+	List<Player> nextBucket() throws InterruptedException {
+		return this.bucketQueue.take();
 	}
 
-	List<Player> getBucket() throws InterruptedException {
-		List<Player> bucket;
-
-		while ((bucket = this.bucketQueue.poll()) == null) {
-			this.phaser.awaitAdvance(this.phaser.arriveAndDeregister());
-		}
-
-		return bucket;
-	}
-
-	void awaitNextExecution() throws InterruptedException, BrokenBarrierException {
-		this.cyclicBarrier.await();
+	void finishBucketProcessing() {
+		this.phaser.arriveAndDeregister();
 	}
 
 	@Override
@@ -199,59 +90,62 @@ public class ProximityDirectorThread extends Thread {
 				Collection<? extends Player> players = Bukkit.getOnlinePlayers();
 				Iterator<? extends Player> iterator = players.iterator();
 
+				// park thread if no players are online
+				if (players.isEmpty()) {
+					LockSupport.park(this);
+				}
+
 				int playerCount = players.size();
-				int bucketCount = Math.min((int) Math.ceil((float) playerCount / 50f), this.workerCount);
+				int maxBucketSize = Math.max(DEFAULT_BUCKET_SIZE, (int) Math.ceil((float) playerCount / this.workerCount));
+
+				int bucketCount = (int) Math.ceil((float) playerCount / maxBucketSize);
 				int bucketSize = (int) Math.ceil((float) playerCount / (float) bucketCount);
 
+				// register extra worker threads in phaser
+				if (bucketCount > 1) {
+					this.phaser.bulkRegister(bucketCount - 1);
+				}
+
+				// this threads local bucket
 				List<Player> localBucket = null;
 
-				this.bucketLock.lock();
-				try {
-					// refill buckets
-					for (int index = 0; index < bucketCount; index++) {
-						List<Player> bucket = new ArrayList<>();
+				// create buckets and fill queue
+				for (int index = 0; index < bucketCount; index++) {
+					List<Player> bucket = new ArrayList<>();
 
-						for (int size = 0; size < bucketSize && iterator.hasNext(); size++) {
-							bucket.add(iterator.next());
-						}
+					// fill bucket until bucket full or no players remain
+					for (int size = 0; size < bucketSize && iterator.hasNext(); size++) {
+						bucket.add(iterator.next());
+					}
 
+					// assign first bucket to current thread
+					if (index == 0) {
+						localBucket = bucket;
+					} else {
 						this.bucketQueue.offer(bucket);
 					}
-
-					System.out.println("buckets: " + this.bucketQueue);
-
-					// get own bucket
-					localBucket = this.bucketQueue.poll();
-
-					// wake up enough threads for the amount of created buckets
-					for (int i = 0; i < bucketCount - 1; i++) {
-						this.nextBucket.signal();
-					}
-				} finally {
-					this.bucketLock.unlock();
 				}
 
 				// process local bucket
-				if (localBucket != null) {
-					for (Player player : localBucket) {
-						this.worker.process(player);
-					}
+				for (Player player : localBucket) {
+					this.worker.process(player);
 				}
 
 				// wait for all threads to finish and reset barrier
-				this.awaitNextExecution();
-				this.cyclicBarrier.reset();
+				this.phaser.arriveAndAwaitAdvance();
 
 				// sleep till next execution
-				Thread.sleep(1000L);
+				Thread.sleep(50L);// TODO add to config
 			} catch (InterruptedException e) {
 				continue;
-			} catch (BrokenBarrierException e) {
-				e.printStackTrace();
-				break;
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+		}
+
+		if (this.phaser.isTerminated()) {
+			OFCLogger.error("Looks like we encountered an invalid state, please report this:",
+					new IllegalStateException("Proximity Phaser terminated!"));
 		}
 	}
 }

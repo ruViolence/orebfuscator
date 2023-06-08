@@ -76,9 +76,11 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 			}
 
 			Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
-				System.out.println("OFC_PLAYER: " + OrebfuscatorPlayer.PLAYER_MAP.size());
 				System.gc();
-			}, 200, 200);
+			}, 20, 20);
+			Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
+				System.out.println("OFC_PLAYER: " + OrebfuscatorPlayer.PLAYER_MAP.size());
+			}, 400, 400);
 
 			// Load packet listener
 			this.obfuscationSystem.registerChunkListener();

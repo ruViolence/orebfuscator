@@ -1,7 +1,6 @@
 package net.imprex.orebfuscator.proximityhider;
 
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bukkit.entity.Player;
@@ -17,6 +16,7 @@ public class ProximityWorkerThread extends Thread {
 
 	public ProximityWorkerThread(ProximityDirectorThread directorThread, ProximityWorker worker) {
 		super(Orebfuscator.THREAD_GROUP, "ofc-proximity-worker-" + NEXT_ID.getAndIncrement());
+		this.setDaemon(true);
 
 		this.directorThread = directorThread;
 		this.worker = worker;
@@ -26,18 +26,15 @@ public class ProximityWorkerThread extends Thread {
 	public void run() {
 		while (this.directorThread.isRunning()) {
 			try {
-				List<Player> bucket = this.directorThread.getBucket();
+				List<Player> bucket = this.directorThread.nextBucket();
 
 				for (Player player : bucket) {
 					this.worker.process(player);
 				}
 
-				this.directorThread.awaitNextExecution();
+				this.directorThread.finishBucketProcessing();
 			} catch (InterruptedException e) {
 				continue;
-			} catch (BrokenBarrierException e) {
-				e.printStackTrace();
-				break;
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

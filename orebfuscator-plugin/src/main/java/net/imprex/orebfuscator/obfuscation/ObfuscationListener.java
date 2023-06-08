@@ -7,7 +7,6 @@ import org.bukkit.entity.Player;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.events.PacketPostAdapter;
 
 import net.imprex.orebfuscator.Orebfuscator;
 import net.imprex.orebfuscator.OrebfuscatorPlayer;
@@ -53,15 +52,6 @@ public abstract class ObfuscationListener extends PacketAdapter {
 
 		this.preChunkProcessing(event);
 
-		event.getNetworkMarker().addPostListener(new PacketPostAdapter(this.plugin) {
-
-			@Override
-			public void onPostEvent(PacketEvent event) {
-				System.out.println("post-1: " + struct.chunkX + " " + struct.chunkZ);
-			}
-			
-		});
-
 		this.obfuscationSystem.obfuscate(struct).whenComplete((chunk, throwable) -> {
 			if (throwable != null) {
 				this.completeExceptionally(event, struct, throwable);
@@ -95,16 +85,16 @@ public abstract class ObfuscationListener extends PacketAdapter {
 
 		final OrebfuscatorPlayer player = OrebfuscatorPlayer.get(event.getPlayer());
 
-		event.getNetworkMarker().addPostListener(new PacketPostAdapter(this.plugin) {
-
-			@Override
-			public void onPostEvent(PacketEvent event) {
-				System.out.println("post-2: " + struct.chunkX + " " + struct.chunkZ);
-				player.addChunk(struct.chunkX, struct.chunkZ, chunk.getProximityBlocks());
-			}
-			
-		});
-//		player.addChunk(struct.chunkX, struct.chunkZ, chunk.getProximityBlocks());
+//		event.getNetworkMarker().addPostListener(new PacketPostAdapter(this.plugin) {
+//
+//			@Override
+//			public void onPostEvent(PacketEvent event) {
+//				System.out.println("post-2: " + struct.chunkX + " " + struct.chunkZ);
+//				player.addChunk(struct.chunkX, struct.chunkZ, chunk.getProximityBlocks());
+//			}
+//			
+//		});
+		player.addChunk(struct.chunkX, struct.chunkZ, chunk.getProximityBlocks());
 
 		this.postChunkProcessing(event);
 	}

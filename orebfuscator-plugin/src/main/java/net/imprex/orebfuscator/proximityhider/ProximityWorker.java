@@ -61,7 +61,6 @@ public class ProximityWorker {
 
 	protected void process(Player player) {
 		if (this.shouldIgnorePlayer(player)) {
-			System.out.println("ignored: " + player);
 			return;
 		}
 
@@ -70,14 +69,12 @@ public class ProximityWorker {
 		// check if world has enabled proximity config
 		ProximityConfig proximityConfig = this.config.world(world).proximity();
 		if (proximityConfig == null || !proximityConfig.isEnabled()) {
-			System.out.println("no_config: " + player);
 			return;
 		}
 
 		// check if player changed location since last time
 		OrebfuscatorPlayer orebfuscatorPlayer = OrebfuscatorPlayer.get(player);
-		if (!orebfuscatorPlayer.hasLocationChanged((a, b) -> isLocationSimilar(proximityConfig.useFastGazeCheck(), a, b))) {
-			System.out.println("no_change: " + player);
+		if (!orebfuscatorPlayer.needsProximityUpdate((a, b) -> isLocationSimilar(proximityConfig.useFastGazeCheck(), a, b))) {
 			return;
 		}
 
@@ -123,7 +120,6 @@ public class ProximityWorker {
 
 		Bukkit.getScheduler().runTask(this.orebfuscator, () -> {
 			if (player.isOnline()) {
-				player.sendMessage("updated: " + updateBlocks.size());
 				for (BlockPos blockCoords : updateBlocks) {
 					NmsInstance.sendBlockChange(player, blockCoords);
 				}
