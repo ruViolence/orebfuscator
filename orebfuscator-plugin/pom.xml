@@ -60,7 +60,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.comphenix.protocol</groupId>
-			<artifactId>ProtocolLib-API</artifactId>
+			<artifactId>ProtocolLib</artifactId>
 			<version>${dependency.protocollib.version}</version>
 			<scope>provided</scope>
 		</dependency>
@@ -191,6 +191,12 @@
 		<dependency>
 			<groupId>net.imprex</groupId>
 			<artifactId>orebfuscator-nms-v1_19_R3</artifactId>
+			<version>${revision}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.imprex</groupId>
+			<artifactId>orebfuscator-nms-v1_20_R1</artifactId>
 			<version>${revision}</version>
 			<scope>compile</scope>
 		</dependency>
