@@ -23,13 +23,20 @@ public class OrebfuscatorPlayerMap implements Listener {
 		this.orebfuscator = orebfuscator;
 		if (orebfuscator.getOrebfuscatorConfig().proximityEnabled()) {
 			Bukkit.getPluginManager().registerEvents(this, orebfuscator);
+
+			for (Player player : Bukkit.getOnlinePlayers()) {
+				this.addPlayer(player);
+			}
 		}
+	}
+
+	private void addPlayer(Player player) {
+		this.internalMap.put(player, new OrebfuscatorPlayer(orebfuscator, player));
 	}
 
 	@EventHandler
 	public void onLogin(PlayerLoginEvent event) {
-		Player player = event.getPlayer();
-		this.internalMap.put(player, new OrebfuscatorPlayer(orebfuscator, player));
+		this.addPlayer(event.getPlayer());
 	}
 
 	@EventHandler
