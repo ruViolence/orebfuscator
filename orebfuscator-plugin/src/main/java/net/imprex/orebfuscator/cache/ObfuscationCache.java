@@ -1,6 +1,6 @@
 package net.imprex.orebfuscator.cache;
 
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.bukkit.Bukkit;
@@ -51,7 +51,7 @@ public class ObfuscationCache {
 		}
 	}
 
-	public CompletionStage<ObfuscationResult> get(ObfuscationRequest request) {
+	public CompletableFuture<ObfuscationResult> get(ObfuscationRequest request) {
 		ChunkPosition key = request.getPosition();
 
 		ObfuscationResult cacheChunk = this.cache.getIfPresent(key);

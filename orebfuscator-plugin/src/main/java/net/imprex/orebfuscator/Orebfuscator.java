@@ -15,6 +15,7 @@ import net.imprex.orebfuscator.api.OrebfuscatorService;
 import net.imprex.orebfuscator.cache.ObfuscationCache;
 import net.imprex.orebfuscator.config.OrebfuscatorConfig;
 import net.imprex.orebfuscator.obfuscation.ObfuscationSystem;
+import net.imprex.orebfuscator.player.OrebfuscatorPlayerMap;
 import net.imprex.orebfuscator.proximityhider.ProximityDirectorThread;
 import net.imprex.orebfuscator.proximityhider.ProximityPacketListener;
 import net.imprex.orebfuscator.util.HeightAccessor;
@@ -27,6 +28,7 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 	private final Thread mainThread = Thread.currentThread();
 
 	private OrebfuscatorConfig config;
+	private OrebfuscatorPlayerMap playerMap;
 	private UpdateSystem updateSystem;
 	private ObfuscationCache obfuscationCache;
 	private ObfuscationSystem obfuscationSystem;
@@ -52,6 +54,8 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 			// Load configurations
 			this.config = new OrebfuscatorConfig(this);
 
+			this.playerMap = new OrebfuscatorPlayerMap(this);
+
 			// register cleanup listener
 			HeightAccessor.registerListener(this);
 
@@ -74,13 +78,6 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 
 				this.proximityPacketListener = new ProximityPacketListener(this);
 			}
-
-			Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
-				System.gc();
-			}, 20, 20);
-			Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
-				System.out.println("OFC_PLAYER: " + OrebfuscatorPlayer.PLAYER_MAP.size());
-			}, 400, 400);
 
 			// Load packet listener
 			this.obfuscationSystem.registerChunkListener();
@@ -140,6 +137,10 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 
 	public OrebfuscatorConfig getOrebfuscatorConfig() {
 		return this.config;
+	}
+
+	public OrebfuscatorPlayerMap getPlayerMap() {
+		return playerMap;
 	}
 
 	public UpdateSystem getUpdateSystem() {

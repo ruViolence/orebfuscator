@@ -1,36 +1,26 @@
-package net.imprex.orebfuscator;
+package net.imprex.orebfuscator.player;
 
 import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiPredicate;
 
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import com.google.common.base.Objects;
-import com.google.common.collect.MapMaker;
 
+import net.imprex.orebfuscator.Orebfuscator;
+import net.imprex.orebfuscator.config.AdvancedConfig;
 import net.imprex.orebfuscator.util.BlockPos;
 import net.imprex.orebfuscator.util.ChunkPosition;
 
 public class OrebfuscatorPlayer {
 
-	private static final long CHECK_INTERVAL = 5000; // TODO add to config
-
-	public static final ConcurrentMap<Player, OrebfuscatorPlayer> PLAYER_MAP = new MapMaker().weakKeys().makeMap(); // TODO remove on quit event
-
-	public static OrebfuscatorPlayer get(Player player) {
-		OrebfuscatorPlayer playerData = PLAYER_MAP.computeIfAbsent(player, OrebfuscatorPlayer::new);
-		playerData.updateWorld();
-		return playerData;
-	}
-
+	private final AdvancedConfig config;
 	private final WeakReference<Player> player;
 
 	private final AtomicReference<World> world = new AtomicReference<>();
@@ -39,24 +29,29 @@ public class OrebfuscatorPlayer {
 	private volatile long latestUpdateTimestamp = System.currentTimeMillis();
 	private volatile Location location = new Location(null, 0, 0, 0);
 
-	public OrebfuscatorPlayer(Player player) {
+	public OrebfuscatorPlayer(Orebfuscator orebfuscator, Player player) {
+		this.config = orebfuscator.getOrebfuscatorConfig().advanced();
 		this.player = new WeakReference<Player>(player);
 		this.location = player.getLocation();
 	}
 
 	/**
-	 * Returns true if the last proximity update is longer ago then 5s or if the players
-	 * location since the last update change according to the given equals method.
-	 * @param equals the location equals function
+	 * Returns true if the last proximity update is longer ago then the configured
+	 * proximity player interval (default 5s) or if the players location since the
+	 * last update change according to the given rotation boolean and the
+	 * {@link OrebfuscatorPlayer#isLocationSimilar isLocationSimilar} method.
+	 * 
+	 * @param rotation passed to the <code>isLocationSimilar</code> method
 	 * @return true if a proximity update is needed
 	 */
-	public boolean needsProximityUpdate(BiPredicate<Location, Location> equals) {
+	public boolean needsProximityUpdate(boolean rotation) {
 		if (this.player.refersTo(null)) {
 			return false;
 		}
 
 		long timestamp = System.currentTimeMillis();
-		if (timestamp - this.latestUpdateTimestamp > CHECK_INTERVAL) {
+		if (this.config.hasProximityPlayerCheckInterval() &&
+				timestamp - this.latestUpdateTimestamp > this.config.proximityPlayerCheckInterval()) {
 
 			// always update location + latestUpdateTimestamp on update
 			this.location = location;
@@ -65,8 +60,9 @@ public class OrebfuscatorPlayer {
 			return true;
 		}
 
+
 		Location location = this.player.get().getLocation();
-		if (equals.test(this.location, location)) {
+		if (isLocationSimilar(rotation, this.location, location)) {
 			return false;
 		}
 
@@ -77,7 +73,36 @@ public class OrebfuscatorPlayer {
 		return true;
 	}
 
-	private void updateWorld() {
+	/**
+	 * Returns true if the worlds are the same and the distance between the locations
+	 * is less then 0.5. If the rotation boolean is set this method also check if the
+	 * yaw changed less then 10deg and the pitch less then 5deg.
+	 * 
+	 * @param rotation should rotation be checked
+	 * @param a the first location
+	 * @param b the second location
+	 * @return if the locations are similar
+	 */
+	private static boolean isLocationSimilar(boolean rotation, Location a, Location b) {
+		// check if world changed
+		if (!Objects.equal(a.getWorld(), b.getWorld())) {
+			return false;
+		}
+
+		// check if len(xyz) changed less then 0.5 blocks
+		if (a.distanceSquared(b) > 0.25) {
+			return false;
+		}
+
+		// check if rotation changed less then 10deg yaw or 5deg pitch
+		if (rotation && (Math.abs(a.getYaw() - b.getYaw()) > 10 || Math.abs(a.getPitch() - b.getPitch()) > 5)) {
+			return false;
+		}
+
+		return true;
+	}
+
+	void updateWorld() {
 		if (this.player.refersTo(null)) {
 			return;
 		}

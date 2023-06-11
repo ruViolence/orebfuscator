@@ -16,26 +16,32 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 import net.imprex.orebfuscator.Orebfuscator;
+import net.imprex.orebfuscator.config.AdvancedConfig;
 import net.imprex.orebfuscator.util.OFCLogger;
 
 public class ProximityDirectorThread extends Thread implements Listener {
 
-	private static final int DEFAULT_BUCKET_SIZE = 50;
+	private final int workerCount;
+	private final int defaultBucketSize;
+	private final int checkInterval;
 
 	private final Phaser phaser = new Phaser(1);
 	private volatile boolean running = true;
 
-	private final int workerCount;
-	private final BlockingQueue<List<Player>> bucketQueue = new LinkedBlockingQueue<>();
-
 	private final ProximityWorker worker;
 	private final ProximityWorkerThread[] workerThreads;
+
+	private final BlockingQueue<List<Player>> bucketQueue = new LinkedBlockingQueue<>();
 
 	public ProximityDirectorThread(Orebfuscator orebfuscator) {
 		super(Orebfuscator.THREAD_GROUP, "ofc-proximity-director");
 		this.setDaemon(true);
 
-		this.workerCount = orebfuscator.getOrebfuscatorConfig().advanced().proximityHiderThreads();
+		AdvancedConfig advancedConfig = orebfuscator.getOrebfuscatorConfig().advanced();
+		this.workerCount = advancedConfig.proximityHiderThreads();
+		this.defaultBucketSize = advancedConfig.proximityDefaultBucketSize();
+		this.checkInterval = advancedConfig.proximityThreadCheckInterval();
+
 		Bukkit.getPluginManager().registerEvents(this, orebfuscator);
 
 		this.worker = new ProximityWorker(orebfuscator);
@@ -88,16 +94,20 @@ public class ProximityDirectorThread extends Thread implements Listener {
 		while (this.isRunning()) {
 			try {
 				Collection<? extends Player> players = Bukkit.getOnlinePlayers();
-				Iterator<? extends Player> iterator = players.iterator();
 
 				// park thread if no players are online
 				if (players.isEmpty()) {
 					LockSupport.park(this);
+					// reset interrupt flag
+					Thread.interrupted();
+					continue;
 				}
 
+				// get player count and derive max bucket size for each thread
 				int playerCount = players.size();
-				int maxBucketSize = Math.max(DEFAULT_BUCKET_SIZE, (int) Math.ceil((float) playerCount / this.workerCount));
+				int maxBucketSize = Math.max(this.defaultBucketSize, (int) Math.ceil((float) playerCount / this.workerCount));
 
+				// calculate bucketC
 				int bucketCount = (int) Math.ceil((float) playerCount / maxBucketSize);
 				int bucketSize = (int) Math.ceil((float) playerCount / (float) bucketCount);
 
@@ -108,6 +118,8 @@ public class ProximityDirectorThread extends Thread implements Listener {
 
 				// this threads local bucket
 				List<Player> localBucket = null;
+
+				Iterator<? extends Player> iterator = players.iterator();
 
 				// create buckets and fill queue
 				for (int index = 0; index < bucketCount; index++) {
@@ -131,11 +143,11 @@ public class ProximityDirectorThread extends Thread implements Listener {
 					this.worker.process(player);
 				}
 
-				// wait for all threads to finish and reset barrier
+				// wait for all threads to finish and reset phaser
 				this.phaser.arriveAndAwaitAdvance();
 
 				// sleep till next execution
-				Thread.sleep(50L);// TODO add to config
+				Thread.sleep(this.checkInterval);
 			} catch (InterruptedException e) {
 				continue;
 			} catch (Exception e) {

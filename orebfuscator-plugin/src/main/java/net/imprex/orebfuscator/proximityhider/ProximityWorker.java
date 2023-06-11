@@ -11,13 +11,12 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import com.google.common.base.Objects;
-
 import net.imprex.orebfuscator.NmsInstance;
 import net.imprex.orebfuscator.Orebfuscator;
-import net.imprex.orebfuscator.OrebfuscatorPlayer;
 import net.imprex.orebfuscator.config.OrebfuscatorConfig;
 import net.imprex.orebfuscator.config.ProximityConfig;
+import net.imprex.orebfuscator.player.OrebfuscatorPlayer;
+import net.imprex.orebfuscator.player.OrebfuscatorPlayerMap;
 import net.imprex.orebfuscator.util.BlockPos;
 import net.imprex.orebfuscator.util.MathUtil;
 import net.imprex.orebfuscator.util.PermissionUtil;
@@ -26,10 +25,12 @@ public class ProximityWorker {
 
 	private final Orebfuscator orebfuscator;
 	private final OrebfuscatorConfig config;
+	private final OrebfuscatorPlayerMap playerMap;
 
 	public ProximityWorker(Orebfuscator orebfuscator) {
 		this.orebfuscator = orebfuscator;
 		this.config = orebfuscator.getOrebfuscatorConfig();
+		this.playerMap = orebfuscator.getPlayerMap();
 	}
 
 	private boolean shouldIgnorePlayer(Player player) {
@@ -38,25 +39,6 @@ public class ProximityWorker {
 		}
 
 		return player.getGameMode() == GameMode.SPECTATOR && this.config.general().ignoreSpectator();
-	}
-
-	private boolean isLocationSimilar(boolean rotation, Location a, Location b) {
-		// check if world changed
-		if (!Objects.equal(a.getWorld(), b.getWorld())) {
-			return false;
-		}
-
-		// check if len(xyz) changed less then 0.5 blocks
-		if (a.distanceSquared(b) > 0.25) {
-			return false;
-		}
-
-		// check if rotation changed less then 10deg yaw or 5deg pitch
-		if (rotation && (Math.abs(a.getYaw() - b.getYaw()) > 10 || Math.abs(a.getPitch() - b.getPitch()) > 5)) {
-			return false;
-		}
-
-		return true;
 	}
 
 	protected void process(Player player) {
@@ -73,8 +55,8 @@ public class ProximityWorker {
 		}
 
 		// check if player changed location since last time
-		OrebfuscatorPlayer orebfuscatorPlayer = OrebfuscatorPlayer.get(player);
-		if (!orebfuscatorPlayer.needsProximityUpdate((a, b) -> isLocationSimilar(proximityConfig.useFastGazeCheck(), a, b))) {
+		OrebfuscatorPlayer orebfuscatorPlayer = this.playerMap.get(player);
+		if (orebfuscatorPlayer == null || !orebfuscatorPlayer.needsProximityUpdate(proximityConfig.useFastGazeCheck())) {
 			return;
 		}
 
