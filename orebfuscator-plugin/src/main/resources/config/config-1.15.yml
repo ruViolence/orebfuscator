@@ -11,7 +11,11 @@ advanced:
   maxMillisecondsPerTick: 10
   protocolLibThreads: -1
   obfuscationWorkerThreads: -1
+  obfuscationTimeout: 10000
   proximityHiderThreads: -1
+  proximityDefaultBucketSize: 50
+  proximityThreadCheckInterval: 50
+  proximityPlayerCheckInterval: 5000
 cache:
   enabled: true
   baseDirectory: orebfuscator_cache
