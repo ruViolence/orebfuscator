@@ -12,7 +12,7 @@ public class OrebfuscatorAdvancedConfig implements AdvancedConfig {
 	private int protocolLibThreads = -1;
 
 	private int obfuscationWorkerThreads = -1;
-	private int obfuscationTimeout = -1;
+	private int obfuscationTimeout = 10_000;
 
 	private int proximityHiderThreads = -1;
 	private int proximityDefaultBucketSize = 50;
