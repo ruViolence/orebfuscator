@@ -21,6 +21,7 @@ import net.imprex.orebfuscator.util.OFCLogger;
 
 public class ProximityDirectorThread extends Thread implements Listener {
 
+	private final Orebfuscator orebfuscator;
 	private final int workerCount;
 	private final int defaultBucketSize;
 	private final int checkInterval;
@@ -37,12 +38,12 @@ public class ProximityDirectorThread extends Thread implements Listener {
 		super(Orebfuscator.THREAD_GROUP, "ofc-proximity-director");
 		this.setDaemon(true);
 
+		this.orebfuscator = orebfuscator;
+
 		AdvancedConfig advancedConfig = orebfuscator.getOrebfuscatorConfig().advanced();
 		this.workerCount = advancedConfig.proximityHiderThreads();
 		this.defaultBucketSize = advancedConfig.proximityDefaultBucketSize();
 		this.checkInterval = advancedConfig.proximityThreadCheckInterval();
-
-		Bukkit.getPluginManager().registerEvents(this, orebfuscator);
 
 		this.worker = new ProximityWorker(orebfuscator);
 		this.workerThreads = new ProximityWorkerThread[workerCount - 1];
@@ -57,6 +58,8 @@ public class ProximityDirectorThread extends Thread implements Listener {
 
 	@Override
 	public void start() {
+		Bukkit.getPluginManager().registerEvents(this, this.orebfuscator);
+
 		super.start();
 
 		for (int i = 0; i < workerCount - 1; i++) {
