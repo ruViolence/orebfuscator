@@ -74,6 +74,7 @@ public class ProximityDirectorThread extends Thread implements Listener {
 			this.workerThreads[i].interrupt();
 		}
 
+		// technically not need but better be safe
 		this.phaser.forceTermination();
 	}
 
@@ -144,7 +145,7 @@ public class ProximityDirectorThread extends Thread implements Listener {
 				}
 
 				// wait for all threads to finish and reset phaser
-				this.phaser.arriveAndAwaitAdvance();
+				this.phaser.awaitAdvanceInterruptibly(this.phaser.arrive());
 
 				// sleep till next execution
 				Thread.sleep(this.checkInterval);
