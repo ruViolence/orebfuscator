@@ -15,8 +15,8 @@ import net.imprex.orebfuscator.api.OrebfuscatorService;
 import net.imprex.orebfuscator.cache.ObfuscationCache;
 import net.imprex.orebfuscator.config.OrebfuscatorConfig;
 import net.imprex.orebfuscator.obfuscation.ObfuscationSystem;
-import net.imprex.orebfuscator.proximityhider.ProximityHider;
-import net.imprex.orebfuscator.proximityhider.ProximityListener;
+import net.imprex.orebfuscator.player.OrebfuscatorPlayerMap;
+import net.imprex.orebfuscator.proximityhider.ProximityDirectorThread;
 import net.imprex.orebfuscator.proximityhider.ProximityPacketListener;
 import net.imprex.orebfuscator.util.HeightAccessor;
 import net.imprex.orebfuscator.util.OFCLogger;
@@ -28,10 +28,11 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 	private final Thread mainThread = Thread.currentThread();
 
 	private OrebfuscatorConfig config;
+	private OrebfuscatorPlayerMap playerMap;
 	private UpdateSystem updateSystem;
 	private ObfuscationCache obfuscationCache;
 	private ObfuscationSystem obfuscationSystem;
-	private ProximityHider proximityHider;
+	private ProximityDirectorThread proximityThread;
 	private ProximityPacketListener proximityPacketListener;
 
 	@Override
@@ -53,6 +54,8 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 			// Load configurations
 			this.config = new OrebfuscatorConfig(this);
 
+			this.playerMap = new OrebfuscatorPlayerMap(this);
+
 			// register cleanup listener
 			HeightAccessor.registerListener(this);
 
@@ -69,13 +72,11 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 			this.obfuscationSystem = new ObfuscationSystem(this);
 
 			// Load proximity hider
-			this.proximityHider = new ProximityHider(this);
+			this.proximityThread = new ProximityDirectorThread(this);
 			if (this.config.proximityEnabled()) {
-				this.proximityHider.start();
+				this.proximityThread.start();
 
 				this.proximityPacketListener = new ProximityPacketListener(this);
-
-				this.getServer().getPluginManager().registerEvents(new ProximityListener(this), this);
 			}
 
 			// Load packet listener
@@ -110,9 +111,9 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 			this.obfuscationSystem.shutdown();
 		}
 
-		if (this.config != null && this.config.proximityEnabled() && this.proximityPacketListener != null && this.proximityHider != null) {
+		if (this.config != null && this.config.proximityEnabled() && this.proximityPacketListener != null && this.proximityThread != null) {
 			this.proximityPacketListener.unregister();
-			this.proximityHider.close();
+			this.proximityThread.close();
 		}
 
 		this.getServer().getScheduler().cancelTasks(this);
@@ -138,6 +139,10 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 		return this.config;
 	}
 
+	public OrebfuscatorPlayerMap getPlayerMap() {
+		return playerMap;
+	}
+
 	public UpdateSystem getUpdateSystem() {
 		return updateSystem;
 	}
@@ -148,10 +153,6 @@ public class Orebfuscator extends JavaPlugin implements Listener {
 
 	public ObfuscationSystem getObfuscationSystem() {
 		return obfuscationSystem;
-	}
-
-	public ProximityHider getProximityHider() {
-		return this.proximityHider;
 	}
 
 	public ProximityPacketListener getProximityPacketListener() {

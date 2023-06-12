@@ -1,7 +1,7 @@
 package net.imprex.orebfuscator.obfuscation;
 
 import java.util.Collection;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 
 import org.bukkit.block.Block;
 
@@ -42,7 +42,7 @@ public class ObfuscationSystem {
 		}
 	}
 
-	public CompletionStage<ObfuscationResult> obfuscate(ChunkStruct chunkStruct) {
+	public CompletableFuture<ObfuscationResult> obfuscate(ChunkStruct chunkStruct) {
 		ObfuscationRequest request = ObfuscationRequest.fromChunk(chunkStruct, this.config, this.dispatcher);
 		if (this.config.cache().enabled()) {
 			return this.cache.get(request);

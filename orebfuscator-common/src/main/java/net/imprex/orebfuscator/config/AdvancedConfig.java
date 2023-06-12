@@ -10,5 +10,17 @@ public interface AdvancedConfig {
 
 	int obfuscationWorkerThreads();
 
+	boolean hasObfuscationTimeout();
+
+	int obfuscationTimeout();
+
 	int proximityHiderThreads();
+
+	int proximityDefaultBucketSize();
+
+	int proximityThreadCheckInterval();
+
+	boolean hasProximityPlayerCheckInterval();
+
+	int proximityPlayerCheckInterval();
 }

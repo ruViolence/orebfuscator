@@ -3,7 +3,6 @@ package net.imprex.orebfuscator.obfuscation;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -60,7 +59,7 @@ public class ObfuscationRequest {
 		return result != null && Arrays.equals(result.getHash(), this.chunkHash);
 	}
 
-	public CompletionStage<ObfuscationResult> submitForObfuscation() {
+	public CompletableFuture<ObfuscationResult> submitForObfuscation() {
 		this.dispatcher.submitRequest(this);
 		return this.future;
 	}
@@ -69,12 +68,12 @@ public class ObfuscationRequest {
 		return new ObfuscationResult(this.position, this.chunkHash, data, blockEntities, proximityBlocks);
 	}
 
-	public CompletionStage<ObfuscationResult> complete(ObfuscationResult result) {
+	public CompletableFuture<ObfuscationResult> complete(ObfuscationResult result) {
 		this.future.complete(result);
 		return this.future;
 	}
 
-	public CompletionStage<ObfuscationResult> completeExceptionally(Throwable throwable) {
+	public CompletableFuture<ObfuscationResult> completeExceptionally(Throwable throwable) {
 		this.future.completeExceptionally(throwable);
 		return this.future;
 	}
