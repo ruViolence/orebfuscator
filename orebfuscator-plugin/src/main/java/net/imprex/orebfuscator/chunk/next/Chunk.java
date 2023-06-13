@@ -12,7 +12,7 @@ import net.imprex.orebfuscator.util.HeightAccessor;
 
 public class Chunk implements AutoCloseable {
 
-	public static Chunk	fromChunkStruct(ChunkStruct chunkStruct, WorldConfigBundle bundle) {
+	public static Chunk fromChunkStruct(ChunkStruct chunkStruct, WorldConfigBundle bundle) {
 		return new Chunk(chunkStruct, bundle, ChunkCapabilities.getExtraBytes(chunkStruct));
 	}
 

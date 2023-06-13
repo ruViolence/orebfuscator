@@ -50,8 +50,13 @@ public class EmptyBitStorage implements BitStorage {
 		}
 
 		@Override
+		public boolean isExhausted() {
+			return true;
+		}
+
+		@Override
 		public void write(int value) {
-			// NOOP
+			throw new UnsupportedOperationException("Can't write to EmptyBitStorage!");
 		}
 	}
 }

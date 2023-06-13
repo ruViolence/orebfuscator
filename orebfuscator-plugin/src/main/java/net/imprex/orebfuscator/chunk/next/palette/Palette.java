@@ -15,7 +15,7 @@ public interface Palette {
 	int packetSize();
 
 	public interface Builder {
-		
+
 		Builder add(int value);
 
 		Palette build();

@@ -7,7 +7,15 @@ public interface BitStorage {
 	int size();
 
 	interface Writer {
-		
+
+		default void throwIfNotExhausted() {
+			if (!isExhausted()) {
+				throw new IllegalStateException("BitStorage.Writer is not exhausted but closed!");
+			}
+		}
+
+		boolean isExhausted();
+
 		void write(int value);
 
 	}

@@ -101,7 +101,16 @@ public class CompactBitStorage implements BitStorage {
 		}
 
 		@Override
+		public boolean isExhausted() {
+			return this.capacity == 0;
+		}
+
+		@Override
 		public void write(int value) {
+			if (this.capacity <= 0) {
+				throw new IllegalStateException("BitStorage.Writer is already exhausted!");
+			}
+
 			long valueValue = this.palette.indexFor(value) & this.valueMask;
 
 			this.longBuffer |= valueValue << this.bitOffset;

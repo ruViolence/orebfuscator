@@ -81,7 +81,7 @@ public class SimpleBitStorage implements BitStorage {
 
 		private int bitOffset = 0;
 		private long longBuffer = 0;
-	
+
 		private int capacity;
 
 		public Writer(ByteBuf buffer, int size, Palette palette) {
@@ -98,7 +98,16 @@ public class SimpleBitStorage implements BitStorage {
 		}
 
 		@Override
+		public boolean isExhausted() {
+			return this.capacity == 0;
+		}
+
+		@Override
 		public void write(int value) {
+			if (this.capacity <= 0) {
+				throw new IllegalStateException("BitStorage.Writer is already exhausted");
+			}
+
 			if (this.bitOffset + this.bitsPerEntry > 64) {
 				this.buffer.writeLong(this.longBuffer);
 				this.longBuffer = 0;

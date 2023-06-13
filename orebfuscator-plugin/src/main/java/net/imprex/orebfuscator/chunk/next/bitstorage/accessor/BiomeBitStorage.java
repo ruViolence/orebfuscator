@@ -6,8 +6,6 @@ import net.imprex.orebfuscator.chunk.next.bitstorage.SimpleBitStorage;
 
 public class BiomeBitStorage {
 
-	private static final int SIZE = 64;
-
 	public static void skip(ByteBuf buffer, int bitsPerEntry) {
 		if (bitsPerEntry == 0) {
 			EmptyBitStorage.skip(buffer);

@@ -1,6 +1,8 @@
 package net.imprex.orebfuscator.chunk.next.bitstorage;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,9 +45,18 @@ public abstract class AbstractBitStorageTest {
 			ByteBuf buffer = Unpooled.buffer(packetSize);
 
 			BitStorage.Writer writer = createWriter(buffer, STORAGE_SIZE, palette);
+
+			assertEquals(false, writer.isExhausted());
+			assertThrows(IllegalStateException.class, () -> writer.throwIfNotExhausted());
+
 			for (int i = 0; i < STORAGE_SIZE; i++) {
+				assertEquals(false, writer.isExhausted());
 				writer.write(i % maxValue);
 			}
+
+			assertEquals(true, writer.isExhausted());
+			assertDoesNotThrow(() -> writer.throwIfNotExhausted());
+			assertThrows(IllegalStateException.class, () -> writer.write(0));
 
 			assertEquals(packetSize, buffer.readableBytes());
 
