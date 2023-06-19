@@ -63,7 +63,7 @@ public class ObfuscationProcessor implements ObfuscationTask.Processor {
 				final int baseY = heightAccessor.getMinBuildHeight() + (sectionIndex << 4);
 				for (int index = 0; index < 4096; index++) {
 					int y = baseY + (index >> 8 & 15);
-					if (!bundle.shouldObfuscate(y)) {
+					if (!bundle.shouldProcessBlock(y)) {
 						continue;
 					}
 
@@ -113,7 +113,7 @@ public class ObfuscationProcessor implements ObfuscationTask.Processor {
 			if (count > 0) {
 				double totalTime = (double) TIME.addAndGet(duration);
 				if (count % 100 == 0) {
-					Bukkit.broadcastMessage("ms/chunk: " + (totalTime / count));
+					Bukkit.broadcastMessage("ms/chunk old: " + (totalTime / count));
 				}
 			}
 

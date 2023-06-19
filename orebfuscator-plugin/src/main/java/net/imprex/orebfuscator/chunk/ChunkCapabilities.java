@@ -1,5 +1,8 @@
 package net.imprex.orebfuscator.chunk;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import net.imprex.orebfuscator.chunk.next.bitstorage.accessor.BlockBitStorage;
 import net.imprex.orebfuscator.util.MinecraftVersion;
 
 public final class ChunkCapabilities {
@@ -24,7 +27,48 @@ public final class ChunkCapabilities {
 	private static final boolean hasDirectPaletteZeroLength = MinecraftVersion.minorVersion() < 13;
 	private static final boolean hasLightArray = MinecraftVersion.minorVersion() < 14;
 
+	private static final byte[] emptyChunkSection = createEmptyChunkSection();
+
+	private static byte[] createEmptyChunkSection() {
+		ByteBuf buffer = Unpooled.buffer();
+
+		// write optional block count
+		if (ChunkCapabilities.hasBlockCount()) {
+			buffer.writeShort(0);
+		}
+
+		if (ChunkCapabilities.hasSingleValuePalette()) {
+			// write bitsPerBlock + palette
+			buffer.writeByte(0);
+			ByteBufUtil.writeVarInt(buffer, 0);
+
+			// write empty block data
+			ByteBufUtil.writeVarInt(buffer, 0);
+		} else {
+			// write min allowed bitsPerBlock
+			final int bitsPerBlock = 4;
+			buffer.writeByte(bitsPerBlock);
+
+			// write palette with air entry
+			ByteBufUtil.writeVarInt(buffer, 1);
+			ByteBufUtil.writeVarInt(buffer, 0);
+
+			// write empty block data
+			int packetSize = BlockBitStorage.packetSize(bitsPerBlock);
+			ByteBufUtil.writeVarInt(buffer, packetSize);
+			buffer.skipBytes(packetSize);
+		}
+
+		return buffer
+				.capacity(buffer.readableBytes())
+				.array();
+	}
+
 	private ChunkCapabilities() {
+	}
+
+	public static byte[] emptyChunkSection() {
+		return emptyChunkSection;
 	}
 
 	public static boolean hasClientboundLevelChunkPacketData() {

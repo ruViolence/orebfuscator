@@ -7,6 +7,9 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import net.imprex.orebfuscator.chunk.ChunkCapabilities;
 import net.imprex.orebfuscator.chunk.ChunkStruct;
+import net.imprex.orebfuscator.chunk.next.ChunkSegment.ProcessingChunkSegment;
+import net.imprex.orebfuscator.chunk.next.ChunkSegment.ReadOnlyChunkSegment;
+import net.imprex.orebfuscator.chunk.next.ChunkSegment.SkippedChunkSegment;
 import net.imprex.orebfuscator.config.WorldConfigBundle;
 import net.imprex.orebfuscator.util.HeightAccessor;
 
@@ -20,65 +23,58 @@ public class Chunk implements AutoCloseable {
 	private final int chunkZ;
 
 	private final HeightAccessor heightAccessor;
-	private final ChunkSectionHolder[] sections;
+	private final ChunkSegment[] sections;
 
 	private final ByteBuf inputBuffer;
-	public final ByteBuf outputBuffer;
+	private final ByteBuf outputBuffer;
+
+	private final ChunkWriter writer;
 
 	private Chunk(ChunkStruct chunkStruct, WorldConfigBundle bundle, int suffixLength) {
 		this.chunkX = chunkStruct.chunkX;
 		this.chunkZ = chunkStruct.chunkZ;
 
 		this.heightAccessor = HeightAccessor.get(chunkStruct.world);
-		this.sections = new ChunkSectionHolder[this.heightAccessor.getSectionCount()];
+		this.sections = new ChunkSegment[this.heightAccessor.getSectionCount()];
 
 		this.inputBuffer = Unpooled.wrappedBuffer(chunkStruct.data);
 		this.outputBuffer = PooledByteBufAllocator.DEFAULT.heapBuffer(chunkStruct.data.length);
 
 		for (int sectionIndex = 0; sectionIndex < this.sections.length; sectionIndex++) {
 			if (chunkStruct.sectionMask.get(sectionIndex)) {
-				ChunkSectionHolder sectionHolder;
+				ChunkSegment sectionHolder;
 
 				if (bundle.skipReadSectionIndex(sectionIndex)) {
-					sectionHolder = new ChunkSectionHolder(ChunkSection.skip(inputBuffer, suffixLength));
+					sectionHolder = new SkippedChunkSegment(ChunkSection.skip(inputBuffer, suffixLength));
 				} else {
-					sectionHolder = new ChunkSectionHolder(new ChunkSection(inputBuffer, suffixLength));
+					ChunkSection chunkSection = new ChunkSection(inputBuffer, suffixLength);
+					if (bundle.skipProcessingSectionIndex(sectionIndex)) {
+						sectionHolder = new ReadOnlyChunkSegment(chunkSection);
+					} else {
+						sectionHolder = new ProcessingChunkSegment(chunkSection);
+					}
 				}
 
 				this.sections[sectionIndex] = sectionHolder;
 			}
 		}
+
+		this.writer = new ChunkWriter(this.outputBuffer, this.sections);
 	}
 
-	public int getSectionCount() {
-		return this.sections.length;
+	public ChunkWriter getWriter() {
+		return writer;
 	}
 
 	public HeightAccessor getHeightAccessor() {
 		return heightAccessor;
 	}
 
-	public ChunkSection getSection(int index) {
-		ChunkSectionHolder chunkSection = this.sections[index];
-		if (chunkSection != null) {
-			return chunkSection.section;
-		}
-		return null;
-	}
-
-	public ByteBuf getSectionBuffer(int index) {
-		ChunkSectionHolder chunkSection = this.sections[index];
-		if (chunkSection != null) {
-			return chunkSection.sectionBuffer;
-		}
-		return null;
-	}
-
 	public int getBlockState(int x, int y, int z) {
 		if (x >> 4 == this.chunkX && z >> 4 == this.chunkZ) {
-			ChunkSectionHolder chunkSection = this.sections[this.heightAccessor.getSectionIndex(y)];
-			if (chunkSection != null && chunkSection.section != null) {
-				return chunkSection.section.getBlockState(x & 0xF, y & 0xF, z & 0xF);
+			ChunkSegment segment = this.sections[this.heightAccessor.getSectionIndex(y)];
+			if (segment != null && segment.hasSection()) {
+				return segment.getSection().getBlockState(x & 0xF, y & 0xF, z & 0xF);
 			}
 			return 0;
 		}
@@ -95,22 +91,5 @@ public class Chunk implements AutoCloseable {
 	public void close() throws Exception {
 		this.inputBuffer.release();
 		this.outputBuffer.release();
-	}
-
-	private class ChunkSectionHolder {
-
-		public final ChunkSection section;
-		public final ByteBuf sectionBuffer;
-
-		public ChunkSectionHolder(ChunkSection section) {
-			this.section = section;
-			this.sectionBuffer = null;
-		}
-
-		public ChunkSectionHolder(ByteBuf sectionBuffer) {
-			this.section = null;
-			this.sectionBuffer = sectionBuffer;
-		}
-
 	}
 }

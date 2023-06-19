@@ -45,8 +45,11 @@ public class ChunkSection {
 	public final BitStorage blockBitStorage;
 
 	public final ByteBuf suffix;
+	public final ByteBuf sectionBuffer;
 
 	public ChunkSection(ByteBuf buffer, int suffixLength) {
+		int startIndex = buffer.readerIndex();
+
 		if (ChunkCapabilities.hasBlockCount()) {
 			this.blockCount = buffer.readShort();
 		} else {
@@ -70,6 +73,9 @@ public class ChunkSection {
 		} else {
 			this.suffix = buffer.readSlice(suffixLength);
 		}
+
+		int sectionLength = buffer.readerIndex() - startIndex;
+		this.sectionBuffer = buffer.slice(startIndex, sectionLength);
 	}
 
 	public boolean isEmpty() {
