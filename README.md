@@ -8,7 +8,7 @@ Orebfuscator empowers server owners to protect their server from X-Ray Clients a
 ### Features
 * Seamless Integration: Plug & Play functionality for effortless use.
 * Extensive Configuration: Highly customizable settings to tailor the experience to your liking.
-* Server Compatibility: Designed for Spigot-based servers 1.9.4 and newer (primarily tested on Spigot).
+* Server Compatibility: Designed for Spigot-based servers 1.16 and newer.
 * Block Obfuscation: Conceal non-visible blocks from players' view.
 * Block-Entity Support: Hide block entities such as Chests and Furnaces.
 * Dynamic Block Visibility: Adjust block visibility based on player proximity and distance.
