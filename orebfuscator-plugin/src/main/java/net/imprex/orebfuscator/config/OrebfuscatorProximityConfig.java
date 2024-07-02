@@ -1,5 +1,6 @@
 package net.imprex.orebfuscator.config;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -31,6 +32,7 @@ public class OrebfuscatorProximityConfig extends AbstractWorldConfig implements 
 	private boolean usesBlockSpecificConfigs = false;
 	private Map<BlockProperties, Integer> hiddenBlocks = new LinkedHashMap<>();
 	private Set<BlockProperties> allowForUseBlockBelow = new HashSet<>();
+	private Map<BlockProperties, BlockProperties> replaceBlocks = new HashMap<>();
 
 	OrebfuscatorProximityConfig(ConfigurationSection section, ConfigParsingContext context) {
 		super(section.getName());
@@ -125,6 +127,14 @@ public class OrebfuscatorProximityConfig extends AbstractWorldConfig implements 
 						blockFlags &= ~BlockFlags.FLAG_USE_BLOCK_BELOW;
 					}
 					usesBlockSpecificConfigs = true;
+				} else if (blockSection.contains(blockName + ".replace")) {
+					String replace = blockSection.getString(blockName + ".replace");
+					BlockProperties replaceBlockProperties = OrebfuscatorNms.getBlockByName(replace);
+					if (replaceBlockProperties == null) {
+						context.warnUnknownBlock(replace);
+					} else {
+						replaceBlocks.put(blockProperties, replaceBlockProperties);
+					}
 				}
 
 				this.hiddenBlocks.put(blockProperties, blockFlags);
@@ -150,6 +160,10 @@ public class OrebfuscatorProximityConfig extends AbstractWorldConfig implements 
 
 			if (BlockFlags.isUseBlockBelowBitSet(blockFlags) != BlockFlags.isUseBlockBelowBitSet(this.defaultBlockFlags)) {
 				childSection.set("useBlockBelow", BlockFlags.isUseBlockBelowBitSet(blockFlags));
+			}
+			
+			if (replaceBlocks.containsKey(entry.getKey())) {
+				childSection.set("replace",	replaceBlocks.get(entry.getKey()).getKey().toString());
 			}
 		}
 	}
@@ -187,6 +201,11 @@ public class OrebfuscatorProximityConfig extends AbstractWorldConfig implements 
 	@Override
 	public Iterable<Map.Entry<BlockProperties, Integer>> hiddenBlocks() {
 		return this.hiddenBlocks.entrySet();
+	}
+
+	@Override
+	public Map<BlockProperties, BlockProperties> replaceBlocks() {
+		return this.replaceBlocks;
 	}
 
 	public Iterable<BlockProperties> allowForUseBlockBelow() {
