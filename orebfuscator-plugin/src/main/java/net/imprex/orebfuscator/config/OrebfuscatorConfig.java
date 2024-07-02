@@ -14,6 +14,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import net.imprex.orebfuscator.util.BlockProperties;
+import net.imprex.orebfuscator.util.BlockStateProperties;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -266,6 +270,7 @@ public class OrebfuscatorConfig implements Config {
 		private final OrebfuscatorProximityConfig proximityConfig;
 
 		private final OrebfuscatorBlockFlags blockFlags;
+		private final Int2IntMap proximityReplaceMap;
 		private final boolean needsObfuscation;
 
 		private final int minY;
@@ -285,6 +290,16 @@ public class OrebfuscatorConfig implements Config {
 			this.proximityConfig = findConfig(proximityConfigs.stream(), worldName, "proximity");
 
 			this.blockFlags = OrebfuscatorBlockFlags.create(obfuscationConfig, proximityConfig);
+			this.proximityReplaceMap = new Int2IntOpenHashMap();
+			if (proximityConfig != null) {
+				for (Map.Entry<BlockProperties, BlockProperties> entry : proximityConfig.replaceBlocks().entrySet()) {
+					BlockProperties from = entry.getKey();
+					BlockProperties to = entry.getValue();
+					for (BlockStateProperties blockState : from.getBlockStates()) {
+						proximityReplaceMap.put(blockState.getId(), to.getDefaultBlockState().getId());
+					}
+				}
+			}
 			this.needsObfuscation = obfuscationConfig != null && obfuscationConfig.isEnabled() ||
 					proximityConfig != null && proximityConfig.isEnabled();
 
@@ -325,6 +340,11 @@ public class OrebfuscatorConfig implements Config {
 		@Override
 		public BlockFlags blockFlags() {
 			return this.blockFlags;
+		}
+
+		@Override
+		public Int2IntMap proximityReplaceMap() {
+			return proximityReplaceMap;
 		}
 
 		@Override
