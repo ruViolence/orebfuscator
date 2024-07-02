@@ -1,8 +1,12 @@
 package net.imprex.orebfuscator.config;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+
 public interface WorldConfigBundle {
 
 	BlockFlags blockFlags();
+
+	Int2IntMap proximityReplaceMap();
 
 	ObfuscationConfig obfuscation();
 

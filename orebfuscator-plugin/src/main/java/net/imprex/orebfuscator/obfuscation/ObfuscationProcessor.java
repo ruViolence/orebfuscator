@@ -94,11 +94,16 @@ public class ObfuscationProcessor {
 					// should current block be proximity hidden
 					if (!obfuscated && BlockFlags.isProximityBitSet(obfuscateBits) && proximityConfig.shouldObfuscate(y)) {
 						proximityBlocks.add(new BlockPos(x, y, z));
-						if (BlockFlags.isUseBlockBelowBitSet(obfuscateBits)) {
-							boolean allowNonOcclude = !isObfuscateBitSet || !ProximityHeightCondition.isPresent(obfuscateBits);
-							blockState = getBlockStateBelow(bundle, chunk, x, y, z, allowNonOcclude);
+						int replaceBlockId = bundle.proximityReplaceMap().getOrDefault(blockState, -1);
+						if (replaceBlockId != -1) {
+							blockState = replaceBlockId;
 						} else {
-							blockState = bundle.nextRandomProximityBlock(y);
+							if (BlockFlags.isUseBlockBelowBitSet(obfuscateBits)) {
+								boolean allowNonOcclude = !isObfuscateBitSet || !ProximityHeightCondition.isPresent(obfuscateBits);
+								blockState = getBlockStateBelow(bundle, chunk, x, y, z, allowNonOcclude);
+							} else {
+								blockState = bundle.nextRandomProximityBlock(y);
+							}
 						}
 						obfuscated = true;
 					}
